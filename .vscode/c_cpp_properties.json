@@ -1,0 +1,41 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/grammars/build/**",
+                "${workspaceFolder}/src/compiler",
+                "${workspaceFolder}/src/compiler/targets",
+                "${workspaceFolder}/src/precompiler",
+                "${workspaceFolder}/src/assembler",
+                "${workspaceFolder}/src/antlr4/runtime/Cpp/runtime/src",
+                "${workspaceFolder}/src/cli11/include/CLI"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        },
+        {
+            "name": "macOS",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/grammars/build/**",
+                "${workspaceFolder}/src/compiler",
+                "${workspaceFolder}/src/compiler/targets",
+                "${workspaceFolder}/src/precompiler",
+                "${workspaceFolder}/src/assembler",
+                "${workspaceFolder}/src/antlr4/runtime/Cpp/runtime/src",
+                "${workspaceFolder}/src/cli11/include/CLI"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/clang",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "macos-clang-x86"
+        }
+    ],
+    "version": 4
+}
