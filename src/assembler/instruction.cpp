@@ -261,6 +261,12 @@ void assembler::Instruction::AssembleMov(Assembler* ass, bool query)
 }
 
 #define TYPICAL_SIZE(opnum) \
+try { \
+  operands[1]->getClass(); \
+} catch (int e) { \
+  ass->addNodeError(ctx, "Undefined variable"); \
+  return; \
+} \
 switch (operands[opnum]->getClass()) \
 { \
   case Operand::Class::REGISTER: \
@@ -334,6 +340,12 @@ if (query) { \
   Operand* op2 = nullptr; \
   Operand* results = operands.size() < 3 ? operands[0] : operands[2]; \
  \
+  try { \
+    operands[1]->getClass(); \
+  } catch (int e) { \
+    ass->addNodeError(ctx, "Undefined variable"); \
+    return; \
+  } \
   if (operands[1]->getClass() == Operand::REGISTER_REL) \
   { \
     op2 = operands[1]; \
@@ -460,25 +472,10 @@ void assembler::Instruction::AssemblePush(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES;
-    switch (operands[1]->getClass()) 
-    { 
-      default:
-      case Operand::Class::NONE: 
-        machine.size = WORD_BYTES; 
-        break; 
-      case Operand::Class::NUMBER:
-        machine.size = WORD_BYTES * 2;
-        break;
-    }
   } else {
     uint32_t code = 0;
     AddOpcode(code, ass);
     AddRegisters(code, nullptr, nullptr, operands[0], ass);
-    if (operands[1]->getClass() == Operand::Class::NUMBER)
-    {
-      AddVariant(code, operands[1], ass);
-      Word2Bits.Set(code, operands[1]->getValue());
-    }
     machine.setBytes(code, machine.size);
   }
 }
