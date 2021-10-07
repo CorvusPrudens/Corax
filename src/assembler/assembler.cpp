@@ -55,7 +55,7 @@ Assembler::Assembler(string assembly, Error& error)
 
   for (auto& instruction : instructions)
   {
-    Machine& temp = instruction.Assemble(this);
+    assembler::Machine& temp = instruction.Assemble(this);
     for (auto byte : temp.bytes) {
       machine_code.push_back(byte);
     }
@@ -82,9 +82,9 @@ void Assembler::Complete()
 
 Any Assembler::visitStatLab(EncaParser::StatLabContext* ctx)
 {
-  Symbol s(ctx->label()->NAME()->getText(), instructions.size());
+  assembler::Symbol s(ctx->label()->NAME()->getText(), instructions.size());
   try {
-    symbols.AddSymbol(s, &err, ctx);
+    symbols.AddSymbol(s, this, ctx);
   } catch (int e) {
     string errmess = "label already defined";
     addNodeError(ctx, errmess);
@@ -96,13 +96,13 @@ Any Assembler::visitStatLab(EncaParser::StatLabContext* ctx)
 // TODO -- just compress this into one function!
 Any Assembler::visitInstr(EncaParser::InstrContext* ctx)
 {
-  Instruction inst(ctx->mnemonic()->getText(), ctx);
+  assembler::Instruction inst(ctx->mnemonic()->getText(), ctx);
   instructions.push_back(inst);
   return nullptr;
 }
 Any Assembler::visitInstrOper(EncaParser::InstrOperContext* ctx)
 {
-  Instruction inst(ctx->mnemonic()->getText(), ctx);
+  assembler::Instruction inst(ctx->mnemonic()->getText(), ctx);
   visitChildren(ctx);
   for (auto ptr : ctx->operands()->operand()) {
     Operand* op = operands.get(ptr);
@@ -113,7 +113,7 @@ Any Assembler::visitInstrOper(EncaParser::InstrOperContext* ctx)
 }
 Any Assembler::visitInstrCond(EncaParser::InstrCondContext* ctx)
 {
-  Instruction inst(ctx->mnemonic()->getText(), ctx);
+  assembler::Instruction inst(ctx->mnemonic()->getText(), ctx);
   visitChildren(ctx);
   inst.setCondition(operands.get(ctx->conditional()));
   instructions.push_back(inst);
@@ -121,7 +121,7 @@ Any Assembler::visitInstrCond(EncaParser::InstrCondContext* ctx)
 }
 Any Assembler::visitInstrOperCond(EncaParser::InstrOperCondContext* ctx)
 {
-  Instruction inst(ctx->mnemonic()->getText(), ctx);
+  assembler::Instruction inst(ctx->mnemonic()->getText(), ctx);
   visitChildren(ctx);
   for (auto ptr : ctx->operands()->operand()) {
     Operand* op = operands.get(ptr);
@@ -241,7 +241,7 @@ Any Assembler::visitDataArray(EncaParser::DataArrayContext* ctx)
     addNodeError(ctx->storage()->dimension(), errmess);
     dimensions = 1;
   }
-  Symbol sym = data_symbols.get(ctx->storage());
+  assembler::Symbol sym = data_symbols.get(ctx->storage());
   
   if (ctx->data_list() != nullptr) {
     for (auto element : ctx->data_list()->data_element()) {
@@ -260,19 +260,19 @@ Any Assembler::visitDataArray(EncaParser::DataArrayContext* ctx)
   if (dimensions == -1 && sym.data.size() == 0) {
     string errmess = "ambiguous data size";
     addNodeError(ctx->storage()->NAME(), errmess);
-    sym.data.push_back(Value(0));
+    sym.data.push_back(assembler::Value(0));
   }
   else
   {
     if (dimensions != -1) {
       while (sym.data.size() < dimensions) {
-        sym.data.push_back(Value(0));
+        sym.data.push_back(assembler::Value(0));
       }
     }
     
   }
   
-  symbols.AddSymbol(sym, &err, ctx->storage()->NAME());
+  symbols.AddSymbol(sym, this, ctx->storage()->NAME());
   return nullptr;
 }
 
@@ -285,15 +285,15 @@ Any Assembler::visitDataSingle(EncaParser::DataSingleContext* ctx)
     string errmess = "invalid dimension for data without initializer list";
     addNodeError(ctx->storage()->dimension(), errmess);
   }
-  Symbol sym = data_symbols.get(ctx->storage());
+  assembler::Symbol sym = data_symbols.get(ctx->storage());
   sym.data.push_back(values.get(ctx->data_element()));
-  symbols.AddSymbol(sym, &err, ctx->storage()->NAME());
+  symbols.AddSymbol(sym, this, ctx->storage()->NAME());
 
   return nullptr;
 }
 Any Assembler::visitStorage(EncaParser::StorageContext* ctx) 
 {
-  Symbol sym(ctx->NAME()->getText());
+  assembler::Symbol sym(ctx->NAME()->getText());
   if (ctx->specifier_list() != nullptr) {
     visit(ctx->specifier_list());
     sym.attributes = attributes.get(ctx->specifier_list());
@@ -303,7 +303,7 @@ Any Assembler::visitStorage(EncaParser::StorageContext* ctx)
 }
 Any Assembler::visitSpecifier_list(EncaParser::Specifier_listContext* ctx)
 {
-  Attributes attr;
+  assembler::Attributes attr;
   for (auto item : ctx->specifier()) {
     int value = 0;
     if (item->number() != nullptr)
@@ -331,16 +331,16 @@ Any Assembler::visitDimNumber(EncaParser::DimNumberContext* ctx)
 }
 Any Assembler::visitVar(EncaParser::VarContext* ctx)
 {
-  Reference r(ctx->NAME()->getText());
-  Value v(r);
+  assembler::Reference r(ctx->NAME()->getText());
+  assembler::Value v(r);
   values.put(ctx, v);
   return nullptr;
 }
 Any Assembler::visitVarAddr(EncaParser::VarAddrContext* ctx)
 {
-  Reference r(ctx->NAME()->getText());
+  assembler::Reference r(ctx->NAME()->getText());
   r.isAddress = true;
-  Value v(r);
+  assembler::Value v(r);
   values.put(ctx, v);
   return nullptr;
 }
@@ -348,7 +348,7 @@ Any Assembler::visitVarAddr(EncaParser::VarAddrContext* ctx)
 Any Assembler::visitDataNumber(EncaParser::DataNumberContext* ctx)
 {
   visit(ctx->number());
-  Value v(numbers.get(ctx->number()).getValue());
+  assembler::Value v(numbers.get(ctx->number()).getValue());
   values.put(ctx, v);
   return nullptr;
 }

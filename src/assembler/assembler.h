@@ -60,15 +60,15 @@ class Assembler : public EncaBaseVisitor {
     ~Assembler() {}
 
     
-    SymbolTable symbols;
+    assembler::SymbolTable symbols;
     PtrProperty<Operand> operands;
     // unordered_map<tree::ParseTree*, unique_ptr<Operand>> operands;
     // tree::ParseTreeProperty<Operand> operands;
     tree::ParseTreeProperty<Number> numbers;
-    tree::ParseTreeProperty<Symbol> data_symbols;
-    tree::ParseTreeProperty<Value> values;
+    tree::ParseTreeProperty<assembler::Symbol> data_symbols;
+    tree::ParseTreeProperty<assembler::Value> values;
     tree::ParseTreeProperty<unordered_map<string, int>> attributes;
-    vector<Instruction> instructions;
+    vector<assembler::Instruction> instructions;
     vector<uint8_t> machine_code;
 
     // fstream input;

@@ -5,7 +5,7 @@
 
 // NOTE -- if the conditional opcode is the same as the non-conditional one, then the mnemonic doesn't have a conditional version
 
-Mnemonic::Mnemonic(string n, uint32_t op, vector<vector<Operand::Class>> list)  
+assembler::Mnemonic::Mnemonic(string n, uint32_t op, vector<vector<Operand::Class>> list)  
 {
   name = n;
   opcode = op;
@@ -16,7 +16,7 @@ Mnemonic::Mnemonic(string n, uint32_t op, vector<vector<Operand::Class>> list)
   }
 }
 
-Mnemonic::Mnemonic(string n, uint32_t op, uint32_t cond, vector<vector<Operand::Class>> list) 
+assembler::Mnemonic::Mnemonic(string n, uint32_t op, uint32_t cond, vector<vector<Operand::Class>> list) 
 {
   name = n;
   opcode = op;
@@ -27,19 +27,19 @@ Mnemonic::Mnemonic(string n, uint32_t op, uint32_t cond, vector<vector<Operand::
   }
 }
 
-Bits::Bits(uint32_t s, uint32_t m)
+assembler::Bits::Bits(uint32_t s, uint32_t m)
 {
   shift = s;
   mask = m << shift;
 }
 
-void Bits::Set(uint32_t& word, uint32_t data) const
+void assembler::Bits::Set(uint32_t& word, uint32_t data) const
 {
   word &= ~mask;
   word |= (data << shift) & mask;
 }
 
-void Machine::setBytes(uint32_t word, size_t num_bytes)
+void assembler::Machine::setBytes(uint32_t word, size_t num_bytes)
 {
   for (int i = 0; i < num_bytes; i++)
   {
@@ -48,7 +48,7 @@ void Machine::setBytes(uint32_t word, size_t num_bytes)
   }
 }
 
-Instruction::Instruction(string mnem, ParseTree* c)
+assembler::Instruction::Instruction(string mnem, ParseTree* c)
 {
   // string* idx = std::find(mnemonics, mnemonics + OP_COUNT, mnem);
   // if (idx == mnemonics + OP_COUNT) throw mnem;
@@ -66,7 +66,7 @@ bool op_in(Operand::Class c, vector<Operand::Class> classes) {
   return false;
 }
 
-bool Instruction::verifyOperands() 
+bool assembler::Instruction::verifyOperands() 
 {
   auto& valid = mnemonics[mnemonic].validOperands;
   if (operands.size() > valid.size())
@@ -89,11 +89,11 @@ bool Instruction::verifyOperands()
   return true;
 }
 
-void Instruction::addOperand(Operand* op) {
+void assembler::Instruction::addOperand(Operand* op) {
   operands.push_back(op);
 }
 
-uint32_t Instruction::GetSize(Assembler* ass)
+uint32_t assembler::Instruction::GetSize(Assembler* ass)
 {
   if (methods.count(mnemonic) > 0) { 
     (this->*methods[mnemonic])(ass, true);
@@ -103,7 +103,7 @@ uint32_t Instruction::GetSize(Assembler* ass)
   } 
 }
 
-void Instruction::AddOpcode(uint32_t& code, Assembler* ass)
+void assembler::Instruction::AddOpcode(uint32_t& code, Assembler* ass)
 {
   if (condition != nullptr)
   {
@@ -128,7 +128,7 @@ void Instruction::AddOpcode(uint32_t& code, Assembler* ass)
   }
 }
 
-void Instruction::AddVariant(uint32_t& code, Operand* op, Assembler* ass)
+void assembler::Instruction::AddVariant(uint32_t& code, Operand* op, Assembler* ass)
 {
   switch (op->getClass())
   {
@@ -156,7 +156,7 @@ void Instruction::AddVariant(uint32_t& code, Operand* op, Assembler* ass)
   }
 }
 
-void Instruction::AddRegisters(uint32_t& code, Operand* reg1, Operand* reg2, Operand* reg3, Assembler* ass)
+void assembler::Instruction::AddRegisters(uint32_t& code, Operand* reg1, Operand* reg2, Operand* reg3, Assembler* ass)
 {
   uint32_t r1 = reg1 == nullptr ? 0b000 : reg1->getValue();
   uint32_t r2 = reg2 == nullptr ? 0b000 : reg2->getValue();
@@ -167,7 +167,7 @@ void Instruction::AddRegisters(uint32_t& code, Operand* reg1, Operand* reg2, Ope
   ResultsBits.Set(code, r3);
 }
 
-Machine& Instruction::Assemble(Assembler* ass) 
+assembler::Machine& assembler::Instruction::Assemble(Assembler* ass) 
 { 
   if (methods.count(mnemonic) > 0) { 
     if (!verifyOperands())
@@ -191,14 +191,14 @@ Machine& Instruction::Assemble(Assembler* ass)
 
 #define WORD_BYTES 2
 
-void Instruction::AssembleNop(Assembler* ass, bool query)
+void assembler::Instruction::AssembleNop(Assembler* ass, bool query)
 {
   if (query)
     machine.size = WORD_BYTES;
   else
     machine.bytes = {0, 0};
 }
-void Instruction::AssembleLdr(Assembler* ass, bool query)
+void assembler::Instruction::AssembleLdr(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES * 2;
@@ -222,7 +222,7 @@ void Instruction::AssembleLdr(Assembler* ass, bool query)
     machine.setBytes(code, machine.size);
   }
 }
-void Instruction::AssembleStr(Assembler* ass, bool query)
+void assembler::Instruction::AssembleStr(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES * 2;
@@ -248,7 +248,7 @@ void Instruction::AssembleStr(Assembler* ass, bool query)
 }
 
 // not done (or sure if it's gonna be used lol)
-void Instruction::AssembleMov(Assembler* ass, bool query)
+void assembler::Instruction::AssembleMov(Assembler* ass, bool query)
 {
   if (query) {
 
@@ -271,7 +271,7 @@ switch (operands[opnum]->getClass()) \
     break; \
 }
 
-void Instruction::AssembleCmp(Assembler* ass, bool query)
+void assembler::Instruction::AssembleCmp(Assembler* ass, bool query)
 {
   if (query) {
     TYPICAL_SIZE(1)
@@ -298,7 +298,7 @@ void Instruction::AssembleCmp(Assembler* ass, bool query)
 }
 
 // TODO -- Not ready yet (3 word instruction)
-void Instruction::AssembleCps(Assembler* ass, bool query)
+void assembler::Instruction::AssembleCps(Assembler* ass, bool query)
 {
   if (query) 
   {
@@ -348,42 +348,42 @@ if (query) { \
   machine.setBytes(code, machine.size); \
 }
 
-void Instruction::AssembleAdd(Assembler* ass, bool query)
+void assembler::Instruction::AssembleAdd(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
-void Instruction::AssembleSub(Assembler* ass, bool query)
-{
-  TYPICAL_ARITHMETIC
-}
-
-void Instruction::AssembleMul(Assembler* ass, bool query)
-{
-  TYPICAL_ARITHMETIC
-}
-void Instruction::AssembleDiv(Assembler* ass, bool query)
-{
-  TYPICAL_ARITHMETIC
-}
-void Instruction::AssembleMod(Assembler* ass, bool query)
-{
-  TYPICAL_ARITHMETIC
-}
-void Instruction::AssembleAnd(Assembler* ass, bool query)
+void assembler::Instruction::AssembleSub(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
 
-void Instruction::AssembleOr(Assembler* ass, bool query)
+void assembler::Instruction::AssembleMul(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
-void Instruction::AssembleXor(Assembler* ass, bool query)
+void assembler::Instruction::AssembleDiv(Assembler* ass, bool query)
+{
+  TYPICAL_ARITHMETIC
+}
+void assembler::Instruction::AssembleMod(Assembler* ass, bool query)
+{
+  TYPICAL_ARITHMETIC
+}
+void assembler::Instruction::AssembleAnd(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
 
-void Instruction::AssembleNot(Assembler* ass, bool query)
+void assembler::Instruction::AssembleOr(Assembler* ass, bool query)
+{
+  TYPICAL_ARITHMETIC
+}
+void assembler::Instruction::AssembleXor(Assembler* ass, bool query)
+{
+  TYPICAL_ARITHMETIC
+}
+
+void assembler::Instruction::AssembleNot(Assembler* ass, bool query)
 {
   if (query) {
     TYPICAL_SIZE(0)
@@ -415,16 +415,16 @@ void Instruction::AssembleNot(Assembler* ass, bool query)
     machine.setBytes(code, machine.size);
   }
 }
-void Instruction::AssembleLsl(Assembler* ass, bool query)
+void assembler::Instruction::AssembleLsl(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
 
-void Instruction::AssembleLsr(Assembler* ass, bool query)
+void assembler::Instruction::AssembleLsr(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
-void Instruction::AssembleJmp(Assembler* ass, bool query)
+void assembler::Instruction::AssembleJmp(Assembler* ass, bool query)
 {
    if (query) {
     machine.size = WORD_BYTES * 2;
@@ -456,7 +456,7 @@ void Instruction::AssembleJmp(Assembler* ass, bool query)
     machine.setBytes(code, machine.size);
   }
 }
-void Instruction::AssemblePush(Assembler* ass, bool query)
+void assembler::Instruction::AssemblePush(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES;
@@ -483,7 +483,7 @@ void Instruction::AssemblePush(Assembler* ass, bool query)
   }
 }
 
-void Instruction::AssemblePop(Assembler* ass, bool query)
+void assembler::Instruction::AssemblePop(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES;

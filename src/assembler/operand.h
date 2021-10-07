@@ -133,7 +133,7 @@ class VariableOp : public Operand {
   
   public:
 
-    VariableOp(string n, SymbolTable* t, bool addr) { name = n; table = t; isAddress = addr; }
+    VariableOp(string n, assembler::SymbolTable* t, bool addr) { name = n; table = t; isAddress = addr; }
     ~VariableOp() {}
 
     Class getClass() override;
@@ -142,7 +142,7 @@ class VariableOp : public Operand {
     uint16_t getValue() override;
 
     string name;
-    SymbolTable* table;
+    assembler::SymbolTable* table;
     bool isAddress;
 };
 

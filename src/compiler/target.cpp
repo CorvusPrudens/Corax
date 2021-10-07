@@ -239,7 +239,8 @@ string Line::to_string(unordered_map<Identifier*, int> stack_offsets, string bas
       stack_offsets.count(args[i].result->id) > 0
     )
     {
-      out += '[' + base_reg + ',' + std::to_string(stack_offsets[args[i].result->id]) + ']' + " (" + args[i].result->id->name + ")";
+      // out += '[' + base_reg + ',' + std::to_string(stack_offsets[args[i].result->id]) + ']' + " (" + args[i].result->id->name + ")";
+      out += '[' + base_reg + ',' + std::to_string(stack_offsets[args[i].result->id]) + ']';
     }
     else
     {
@@ -563,13 +564,13 @@ string BaseTarget::to_string()
   string output = "";
   for (auto& func : translations)
   {
-    output += func.id->name + " compiled to " + targetName + "\n";
-    output += "arguments:\n";
+    output += "// \"" + func.id->name + "\" compiled to " + targetName + "\n";
+    output += "// arguments:\n";
     for (auto& arg : func.id->members)
     {
-      output += "  " + arg.dataType.to_string() + " " + arg.name + "\n";
+      output += "//  " + arg.dataType.to_string() + " " + arg.name + "\n";
     }
-    output += "output:\n";
+    output += func.id->name + ":\n";
 
     for (auto& line : func.translation)
     {

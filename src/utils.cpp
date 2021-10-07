@@ -125,7 +125,7 @@ string hex(int value) {
 #include "operand.h"
 
 string getMnemonic(int code) {
-  for (auto& pair : Instruction::mnemonics) {
+  for (auto& pair : assembler::Instruction::mnemonics) {
     if (code == pair.second.opcode) {
       return pair.first;
     }
