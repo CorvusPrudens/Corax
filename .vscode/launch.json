@@ -10,7 +10,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/src/build/corax",
-      "args": ["${workspaceFolder}/src/examples/test.cx"],
+      "args": ["${workspaceFolder}/src/examples/compiler/test.c"],
       "stopAtEntry": true,
       "cwd": "${workspaceFolder}",
       "environment": [],
@@ -29,7 +29,7 @@
       "type": "lldb",
       "request": "launch",
       "program": "${workspaceFolder}/src/build/corax",
-      "args": ["${workspaceFolder}/src/examples/test.cx"],
+      "args": ["${workspaceFolder}/src/examples/compiler/test.c"],
       "stopAtEntry": true,
       "cwd": "${workspaceFolder}",
       "MIMode": "lldb"
