@@ -4,3 +4,4 @@ __pycache__
 .antlr
 .DS_Store
 dist
+*.bin
