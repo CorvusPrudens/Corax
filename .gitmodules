@@ -1,0 +1,6 @@
+[submodule "src/antlr4"]
+	path = src/antlr4
+	url = https://github.com/antlr/antlr4
+[submodule "src/cli11"]
+	path = src/cli11
+	url = https://github.com/CLIUtils/CLI11
