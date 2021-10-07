@@ -14,7 +14,7 @@ PRE = Pre
 JAVA_PATH = build
 BUILD_PATH = ${SRC}/build
 
-EXAMPLE  = ./examples/test.cx
+EXAMPLE  = ./examples/test.c
 
 all: build_compiler
 
@@ -102,7 +102,7 @@ reset: clean
 	@ if [ -d "${SRC}/dist" ]; then rm -rf ${SRC}/dist; fi
 
 run: ${SRC}/build/corax
-	${SRC}/build/corax ${SRC}/examples/test.cx
+	${SRC}/build/corax ${SRC}/examples/compiler/test.c
 
 graph: ${SRC}/build/corax
 	${SRC}/build/corax ${SRC}/examples/test.cx --graph | dot -Tpng -Gdpi=300 -o graph.png

@@ -22,9 +22,11 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/grammars/build/Corax
     ${CMAKE_SOURCE_DIR}/grammars/build/Pre
+    ${CMAKE_SOURCE_DIR}/grammars/build/Enca
     ${CMAKE_SOURCE_DIR}/compiler
     ${CMAKE_SOURCE_DIR}/compiler/targets
     ${CMAKE_SOURCE_DIR}/precompiler
+    ${CMAKE_SOURCE_DIR}/assembler
     ${CMAKE_SOURCE_DIR}/antlr4/runtime/Cpp/runtime/src
     ${CMAKE_SOURCE_DIR}/cli11/include/CLI/
     )
@@ -63,48 +65,16 @@ set (SOURCE_FILES
     ./grammars/build/Corax/CoraxBaseListener.cpp
     ./grammars/build/Corax/CoraxListener.cpp
     ./grammars/build/Corax/CoraxLexer.cpp
-    )
 
-set (INCLUDE_FILES
-    antlr4/runtime/Cpp/runtime/src/antlr4-runtime.h
+    ./assembler/assembler.cpp
+    ./assembler/operand.cpp
+    ./assembler/instruction.cpp
+    ./assembler/symbols.cpp
 
-    colors.h
-    error.h
-    utils.h
-
-    precompiler/precompiler.h
-    compiler/compiler.h
-
-    ./precompiler/sar.h
-
-    ./grammars/build/Pre/PreBaseListener.h
-    ./grammars/build/Pre/PreBaseVisitor.h
-    ./grammars/build/Pre/PreParser.h
-    ./grammars/build/Pre/PreListener.h
-    ./grammars/build/Pre/PreVisitor.h
-    ./grammars/build/Pre/PreLexer.h
-
-    ./grammars/build/Pre/PreExprBaseListener.h
-    ./grammars/build/Pre/PreExprBaseVisitor.h
-    ./grammars/build/Pre/PreExprLexer.h
-    ./grammars/build/Pre/PreExprParser.h
-    ./grammars/build/Pre/PreExprListener.h
-    ./grammars/build/Pre/PreExprVisitor.h
-
-    ./compiler/asm.h
-    ./compiler/identifier.h
-    ./compiler/stable.h
-    ./compiler/type.h
-    ./compiler/operators.h
-    ./compiler/target.h
-
-    ./compiler/targets/corvassembly.h
-
-    ./grammars/build/Corax/CoraxBaseListener.h
-    ./grammars/build/Corax/CoraxLexer.h
-    ./grammars/build/Corax/CoraxParser.h
-    ./grammars/build/Corax/CoraxListener.h
-
+    ./grammars/build/Enca/EncaVisitor.cpp
+    ./grammars/build/Enca/EncaListener.cpp
+    ./grammars/build/Enca/EncaLexer.cpp
+    ./grammars/build/Enca/EncaParser.cpp
     )
 
 list (APPEND LINK_LIBS
@@ -116,7 +86,6 @@ list (APPEND LINK_LIBS
 # add_executable(Compiler main.cpp)
 add_executable(corax Corax.cpp
     ${SOURCE_FILES}
-    ${INCLUDE_FILES}
     )
 target_link_libraries(corax PUBLIC ${LINK_LIBS})
 # add_dependencies(Cp 
