@@ -166,4 +166,9 @@ bool EqualVectors(std::vector<T> v1, std::vector<T> v2)
   return true;
 }
 
+string hex(int value);
+string getMnemonic(int code);
+string getRegister(int reg);
+string formatInstruction(std::vector<uint8_t> machine, bool annotated = false);
+
 #endif // UTILS_H

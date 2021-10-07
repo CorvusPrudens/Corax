@@ -1,6 +1,7 @@
 
 #include "instruction.h"
 #include "error.h"
+#include "assembler.h"
 
 // NOTE -- if the conditional opcode is the same as the non-conditional one, then the mnemonic doesn't have a conditional version
 
@@ -92,17 +93,17 @@ void Instruction::addOperand(Operand* op) {
   operands.push_back(op);
 }
 
-uint32_t Instruction::GetSize(Error* err)
+uint32_t Instruction::GetSize(Assembler* ass)
 {
   if (methods.count(mnemonic) > 0) { 
-    (this->*methods[mnemonic])(err, true);
+    (this->*methods[mnemonic])(ass, true);
     return machine.size;
   } else { 
     return 0;
   } 
 }
 
-void Instruction::AddOpcode(uint32_t& code, Error* err)
+void Instruction::AddOpcode(uint32_t& code, Assembler* ass)
 {
   if (condition != nullptr)
   {
@@ -110,7 +111,7 @@ void Instruction::AddOpcode(uint32_t& code, Error* err)
     {
       code = 0;
       string errmess = "\"" + mnemonic + "\" does not support conditional execution";
-      err->AddNodeErr(errmess, ctx);
+      ass->addNodeError(ctx, errmess);
     }
     else
     {
@@ -127,7 +128,7 @@ void Instruction::AddOpcode(uint32_t& code, Error* err)
   }
 }
 
-void Instruction::AddVariant(uint32_t& code, Operand* op, Error* err)
+void Instruction::AddVariant(uint32_t& code, Operand* op, Assembler* ass)
 {
   switch (op->getClass())
   {
@@ -149,13 +150,13 @@ void Instruction::AddVariant(uint32_t& code, Operand* op, Error* err)
     case Operand::CONDITION_REL:
       {
         string errmess = "invalid relative operand";
-        err->AddNodeErr(errmess, ctx);
+        ass->addNodeError(ctx, errmess);
       }
       break;
   }
 }
 
-void Instruction::AddRegisters(uint32_t& code, Operand* reg1, Operand* reg2, Operand* reg3, Error* err)
+void Instruction::AddRegisters(uint32_t& code, Operand* reg1, Operand* reg2, Operand* reg3, Assembler* ass)
 {
   uint32_t r1 = reg1 == nullptr ? 0b000 : reg1->getValue();
   uint32_t r2 = reg2 == nullptr ? 0b000 : reg2->getValue();
@@ -166,45 +167,45 @@ void Instruction::AddRegisters(uint32_t& code, Operand* reg1, Operand* reg2, Ope
   ResultsBits.Set(code, r3);
 }
 
-Machine& Instruction::Assemble(Error* err) 
+Machine& Instruction::Assemble(Assembler* ass) 
 { 
   if (methods.count(mnemonic) > 0) { 
     if (!verifyOperands())
     {
       string errmess = "invalid operand";
-      err->AddNodeErr(errmess, ctx);
+      ass->addNodeError(ctx, errmess);
     }
     else
     {
       try { 
-        (this->*methods[mnemonic])(err, false); 
+        (this->*methods[mnemonic])(ass, false); 
       } catch (int e) { 
-        err->AddNodeErr("malformed arguments", ctx); 
+        ass->addNodeError(ctx, "malformed arguments"); 
       } 
     }
   } else { 
-    err->AddNodeErr("unexpected mnemonic \"" + mnemonic + "\"", ctx); 
+    ass->addNodeError(ctx, "unexpected mnemonic \"" + mnemonic + "\""); 
   } 
   return machine;
 }
 
 #define WORD_BYTES 2
 
-void Instruction::AssembleNop(Error* err, bool query)
+void Instruction::AssembleNop(Assembler* ass, bool query)
 {
   if (query)
     machine.size = WORD_BYTES;
   else
     machine.bytes = {0, 0};
 }
-void Instruction::AssembleLdr(Error* err, bool query)
+void Instruction::AssembleLdr(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES * 2;
   } else {
     uint32_t code = 0;
-    AddOpcode(code, err);
-    AddVariant(code, operands[1], err);
+    AddOpcode(code, ass);
+    AddVariant(code, operands[1], ass);
 
     Operand* ptr = nullptr;
     if (operands[1]->getClass() == Operand::REGISTER_REL) 
@@ -217,18 +218,18 @@ void Instruction::AssembleLdr(Error* err, bool query)
       Word2Bits.Set(code, operands[1]->getValue());
     }
 
-    AddRegisters(code, nullptr, ptr, operands[0], err);
+    AddRegisters(code, nullptr, ptr, operands[0], ass);
     machine.setBytes(code, machine.size);
   }
 }
-void Instruction::AssembleStr(Error* err, bool query)
+void Instruction::AssembleStr(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES * 2;
   } else {
     uint32_t code = 0;
-    AddOpcode(code, err);
-    AddVariant(code, operands[1], err);
+    AddOpcode(code, ass);
+    AddVariant(code, operands[1], ass);
 
     Operand* ptr = nullptr;
     if (operands[1]->getClass() == Operand::REGISTER_REL) 
@@ -241,20 +242,20 @@ void Instruction::AssembleStr(Error* err, bool query)
       Word2Bits.Set(code, operands[1]->getValue());
     }
 
-    AddRegisters(code, nullptr, ptr, operands[0], err);
+    AddRegisters(code, nullptr, ptr, operands[0], ass);
     machine.setBytes(code, machine.size);
   }
 }
 
 // not done (or sure if it's gonna be used lol)
-void Instruction::AssembleMov(Error* err, bool query)
+void Instruction::AssembleMov(Assembler* ass, bool query)
 {
   if (query) {
 
     machine.size = WORD_BYTES;
   } else {
     uint32_t code = 0;
-    AddOpcode(code, err);
+    AddOpcode(code, ass);
     machine.setBytes(code, machine.size);
   }
 }
@@ -270,14 +271,14 @@ switch (operands[opnum]->getClass()) \
     break; \
 }
 
-void Instruction::AssembleCmp(Error* err, bool query)
+void Instruction::AssembleCmp(Assembler* ass, bool query)
 {
   if (query) {
     TYPICAL_SIZE(1)
   } else {
     uint32_t code = 0;
-    AddOpcode(code, err);
-    AddVariant(code, operands[1], err);
+    AddOpcode(code, ass);
+    AddVariant(code, operands[1], ass);
 
     Operand* op2 = nullptr;
 
@@ -291,13 +292,13 @@ void Instruction::AssembleCmp(Error* err, bool query)
     else
       Word2Bits.Set(code, operands[1]->getValue());
 
-    AddRegisters(code, operands[0], op2, nullptr, err);
+    AddRegisters(code, operands[0], op2, nullptr, ass);
     machine.setBytes(code, machine.size);
   }
 }
 
 // TODO -- Not ready yet (3 word instruction)
-void Instruction::AssembleCps(Error* err, bool query)
+void Instruction::AssembleCps(Assembler* ass, bool query)
 {
   if (query) 
   {
@@ -314,8 +315,8 @@ void Instruction::AssembleCps(Error* err, bool query)
   else 
   {
     uint32_t code = 0;
-    AddOpcode(code, err);
-    AddVariant(code, operands[1], err);
+    AddOpcode(code, ass);
+    AddVariant(code, operands[1], ass);
     machine.setBytes(code, machine.size);
   }
 }
@@ -327,8 +328,8 @@ if (query) { \
   TYPICAL_SIZE(1) \
 } else { \
   uint32_t code = 0; \
-  AddOpcode(code, err); \
-  AddVariant(code, operands[1], err); \
+  AddOpcode(code, ass); \
+  AddVariant(code, operands[1], ass); \
  \
   Operand* op2 = nullptr; \
   Operand* results = operands.size() < 3 ? operands[0] : operands[2]; \
@@ -343,53 +344,53 @@ if (query) { \
   else \
     Word2Bits.Set(code, operands[1]->getValue()); \
  \
-  AddRegisters(code, operands[0], op2, results, err); \
+  AddRegisters(code, operands[0], op2, results, ass); \
   machine.setBytes(code, machine.size); \
 }
 
-void Instruction::AssembleAdd(Error* err, bool query)
+void Instruction::AssembleAdd(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
-void Instruction::AssembleSub(Error* err, bool query)
-{
-  TYPICAL_ARITHMETIC
-}
-
-void Instruction::AssembleMul(Error* err, bool query)
-{
-  TYPICAL_ARITHMETIC
-}
-void Instruction::AssembleDiv(Error* err, bool query)
-{
-  TYPICAL_ARITHMETIC
-}
-void Instruction::AssembleMod(Error* err, bool query)
-{
-  TYPICAL_ARITHMETIC
-}
-void Instruction::AssembleAnd(Error* err, bool query)
+void Instruction::AssembleSub(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
 
-void Instruction::AssembleOr(Error* err, bool query)
+void Instruction::AssembleMul(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
-void Instruction::AssembleXor(Error* err, bool query)
+void Instruction::AssembleDiv(Assembler* ass, bool query)
+{
+  TYPICAL_ARITHMETIC
+}
+void Instruction::AssembleMod(Assembler* ass, bool query)
+{
+  TYPICAL_ARITHMETIC
+}
+void Instruction::AssembleAnd(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
 
-void Instruction::AssembleNot(Error* err, bool query)
+void Instruction::AssembleOr(Assembler* ass, bool query)
+{
+  TYPICAL_ARITHMETIC
+}
+void Instruction::AssembleXor(Assembler* ass, bool query)
+{
+  TYPICAL_ARITHMETIC
+}
+
+void Instruction::AssembleNot(Assembler* ass, bool query)
 {
   if (query) {
     TYPICAL_SIZE(0)
   } else {
     uint32_t code = 0;
-    AddOpcode(code, err);
-    AddVariant(code, operands[0], err);
+    AddOpcode(code, ass);
+    AddVariant(code, operands[0], ass);
 
     Operand* ptr = nullptr;
     Operand* results = nullptr;
@@ -410,27 +411,27 @@ void Instruction::AssembleNot(Error* err, bool query)
       results = operands[1];
     }
 
-    AddRegisters(code, nullptr, ptr, results, err);
+    AddRegisters(code, nullptr, ptr, results, ass);
     machine.setBytes(code, machine.size);
   }
 }
-void Instruction::AssembleLsl(Error* err, bool query)
+void Instruction::AssembleLsl(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
 
-void Instruction::AssembleLsr(Error* err, bool query)
+void Instruction::AssembleLsr(Assembler* ass, bool query)
 {
   TYPICAL_ARITHMETIC
 }
-void Instruction::AssembleJmp(Error* err, bool query)
+void Instruction::AssembleJmp(Assembler* ass, bool query)
 {
    if (query) {
     machine.size = WORD_BYTES * 2;
   } else {
     uint32_t code = 0;
-    AddOpcode(code, err);
-    AddVariant(code, operands[0], err);
+    AddOpcode(code, ass);
+    AddVariant(code, operands[0], ass);
 
     Operand* ptr = nullptr;
     if (operands[0]->getClass() == Operand::REGISTER_REL) 
@@ -443,7 +444,7 @@ void Instruction::AssembleJmp(Error* err, bool query)
       Word2Bits.Set(code, operands[0]->getValue());
     }
 
-    AddRegisters(code, nullptr, ptr, nullptr, err);
+    AddRegisters(code, nullptr, ptr, nullptr, ass);
 
     if (condition != nullptr)
     {
@@ -455,7 +456,7 @@ void Instruction::AssembleJmp(Error* err, bool query)
     machine.setBytes(code, machine.size);
   }
 }
-void Instruction::AssemblePush(Error* err, bool query)
+void Instruction::AssemblePush(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES;
@@ -471,25 +472,25 @@ void Instruction::AssemblePush(Error* err, bool query)
     }
   } else {
     uint32_t code = 0;
-    AddOpcode(code, err);
-    AddRegisters(code, nullptr, nullptr, operands[0], err);
+    AddOpcode(code, ass);
+    AddRegisters(code, nullptr, nullptr, operands[0], ass);
     if (operands[1]->getClass() == Operand::Class::NUMBER)
     {
-      AddVariant(code, operands[1], err);
+      AddVariant(code, operands[1], ass);
       Word2Bits.Set(code, operands[1]->getValue());
     }
     machine.setBytes(code, machine.size);
   }
 }
 
-void Instruction::AssemblePop(Error* err, bool query)
+void Instruction::AssemblePop(Assembler* ass, bool query)
 {
   if (query) {
     machine.size = WORD_BYTES;
   } else {
     uint32_t code = 0;
-    AddOpcode(code, err);
-    AddRegisters(code, nullptr, nullptr, operands[0], err);
+    AddOpcode(code, ass);
+    AddRegisters(code, nullptr, nullptr, operands[0], ass);
     machine.setBytes(code, machine.size);
   }
 }

@@ -56,7 +56,7 @@ struct Kwarg {
 class Assembler : public EncaBaseVisitor {
 
   public:
-    Assembler(string file_);
+    Assembler(string assembly, Error& error);
     ~Assembler() {}
 
     
@@ -71,14 +71,17 @@ class Assembler : public EncaBaseVisitor {
     vector<Instruction> instructions;
     vector<uint8_t> machine_code;
 
-    fstream input;
+    // fstream input;
     ANTLRInputStream stream;
     EncaLexer lexer;
     EncaParser parser;
     CommonTokenStream tokens;
-    Error err;
+    Error& err;
 
     void Complete();
+
+    void addNodeError(ParseTree* node, string errmess);
+    void addNodeWarning(ParseTree* node, string warnmess);
 
     Any visitInstr(EncaParser::InstrContext* ctx) override;
     Any visitInstrOper(EncaParser::InstrOperContext* ctx) override;

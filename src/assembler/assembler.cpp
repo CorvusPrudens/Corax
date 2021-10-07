@@ -2,15 +2,44 @@
 #include "assembler.h"
 #include "number.h"
 
-Assembler::Assembler(string filename)
-: input(filename)
-, stream(input)
+// Assembler::Assembler(string filename)
+// : input(filename)
+// , stream(input)
+// , lexer(&stream)
+// , tokens(&lexer)
+// , parser(&tokens)
+// , err(filename, &tokens)
+// {
+
+//   tree::ParseTree* parse_tree = parser.parse();
+//   visit(parse_tree);
+
+//   size_t address = 0;
+//   for (int i = 0; i < instructions.size(); i++) {
+//     for (auto& symbol : symbols.symbols) {
+//       if (symbol.second.isLabel && symbol.second.index == i) {
+//         symbol.second.address = address;
+//       }
+//     }
+//     address += instructions[i].GetSize(&err);
+//   }
+
+//   for (auto& instruction : instructions)
+//   {
+//     Machine& temp = instruction.Assemble(&err);
+//     for (auto byte : temp.bytes) {
+//       machine_code.push_back(byte);
+//     }
+//   }
+// }
+
+Assembler::Assembler(string assembly, Error& error)
+: stream(assembly)
 , lexer(&stream)
 , tokens(&lexer)
 , parser(&tokens)
-, err(filename, &tokens)
+, err(error)
 {
-
   tree::ParseTree* parse_tree = parser.parse();
   visit(parse_tree);
 
@@ -21,17 +50,30 @@ Assembler::Assembler(string filename)
         symbol.second.address = address;
       }
     }
-    address += instructions[i].GetSize(&err);
+    address += instructions[i].GetSize(this);
   }
 
   for (auto& instruction : instructions)
   {
-    Machine& temp = instruction.Assemble(&err);
+    Machine& temp = instruction.Assemble(this);
     for (auto byte : temp.bytes) {
       machine_code.push_back(byte);
     }
   }
 }
+
+void Assembler::addNodeError(ParseTree* node, string errmess)
+{
+  string file = "";
+  err.AddNodeErr(errmess, node, file, &tokens);
+}
+
+void Assembler::addNodeWarning(ParseTree* node, string warnmess)
+{
+  string file = "";
+  err.AddNodeWarn(warnmess, node, file, &tokens);
+}
+
 
 void Assembler::Complete()
 {
@@ -45,7 +87,7 @@ Any Assembler::visitStatLab(EncaParser::StatLabContext* ctx)
     symbols.AddSymbol(s, &err, ctx);
   } catch (int e) {
     string errmess = "label already defined";
-    err.AddNodeErr(errmess, ctx);
+    addNodeError(ctx, errmess);
   }
   
   return nullptr;
@@ -168,7 +210,7 @@ Any Assembler::visitNumHex(EncaParser::NumHexContext *ctx) {
     value = stoi(ctx->getText(), nullptr, 16);
   } catch (std::out_of_range e) {
     string mess = "literal out of range of 16-bit word";
-    err.AddNodeErr(mess, ctx);
+    addNodeError(ctx, mess);
   }
   num.setValue(value, Number::Type::INT);
   numbers.put(ctx, num);
@@ -196,7 +238,7 @@ Any Assembler::visitDataArray(EncaParser::DataArrayContext* ctx)
   int dimensions = visit(ctx->storage()).as<int>();
   if (dimensions == 0) {
     string errmess = "invalid dimension";
-    err.AddNodeErr(errmess, ctx->storage()->dimension());
+    addNodeError(ctx->storage()->dimension(), errmess);
     dimensions = 1;
   }
   Symbol sym = data_symbols.get(ctx->storage());
@@ -206,7 +248,7 @@ Any Assembler::visitDataArray(EncaParser::DataArrayContext* ctx)
       visit(element);
       if (dimensions != -1 && sym.data.size() > dimensions) {
         string errmess = "initializer list larger than specified dimensions";
-        err.AddNodeErr(errmess, element);
+        addNodeError(element, errmess);
       }
       else
       {
@@ -217,7 +259,7 @@ Any Assembler::visitDataArray(EncaParser::DataArrayContext* ctx)
 
   if (dimensions == -1 && sym.data.size() == 0) {
     string errmess = "ambiguous data size";
-    err.AddNodeErr(errmess, ctx->storage()->NAME());
+    addNodeError(ctx->storage()->NAME(), errmess);
     sym.data.push_back(Value(0));
   }
   else
@@ -241,7 +283,7 @@ Any Assembler::visitDataSingle(EncaParser::DataSingleContext* ctx)
 
   if (dimensions != -1 && dimensions != 1) {
     string errmess = "invalid dimension for data without initializer list";
-    err.AddNodeErr(errmess, ctx->storage()->dimension());
+    addNodeError(ctx->storage()->dimension(), errmess);
   }
   Symbol sym = data_symbols.get(ctx->storage());
   sym.data.push_back(values.get(ctx->data_element()));
@@ -283,7 +325,7 @@ Any Assembler::visitDimNumber(EncaParser::DimNumberContext* ctx)
   visitChildren(ctx);
   int dimensions = numbers.get(ctx->number()).getValue();
   if (ctx->number()->getText()[0] == '-') {
-    err.AddNodeErr("negative dimensions are not permitted", ctx->number());
+    addNodeError(ctx->number(), "negative dimensions are not permitted");
   }
   return dimensions;
 }

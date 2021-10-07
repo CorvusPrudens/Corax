@@ -114,3 +114,103 @@ void ProcessedCode::addLine(int line_in, string file, string line)
   code += line;
   lines.add(line_in, current_line++, file);
 }
+
+string hex(int value) {
+  std::stringstream stream;
+  stream << std::hex << value;
+  return stream.str();
+}
+
+#include "instruction.h"
+#include "operand.h"
+
+string getMnemonic(int code) {
+  for (auto& pair : Instruction::mnemonics) {
+    if (code == pair.second.opcode) {
+      return pair.first;
+    }
+    else if (code == pair.second.conditional) {
+      return pair.first + " (conditional)";
+    }
+  }
+  return "<invalid opcode>";
+}
+
+string getRegister(int reg) {
+  if (reg < (int) RegisterOp::Index::REG_COUNT) {
+    return RegisterOp::Names[reg];
+  }
+  return "<invalid register>";
+}
+
+string formatInstruction(std::vector<uint8_t> machine, bool annotated) 
+{
+  int c[32];
+  
+  for (int i = 0; i < machine.size(); i++) {
+    for (int j = 0; j < 8; j++) {
+      c[j + i * 8] = (machine[i] & (1 << j)) > 0;
+    }
+  }
+
+  string out_1a = "";
+  string out_1b = "";
+  string out_2a = "";
+  string out_2b = "";
+  int pos = 8 * machine.size() - 1;
+  
+  if (pos > 16) {
+    out_2a = "-----------------\n";
+    for ( ; pos > 23; pos--) {
+      out_2a += std::to_string(c[pos]);
+      out_2b += "i";
+    }
+    out_2a += " ";
+    out_2b += " ";
+    for ( ; pos > 15; pos--) {
+      out_2a += std::to_string(c[pos]);
+      out_2b += "i";
+    }
+    int value = machine[2] + (machine[3] << 8);
+    out_2a += " (0x" + hex(value) + ", " + std::to_string(value) + ")\n";
+    out_2b += "\n";
+  }
+
+  for ( ; pos > 12; pos--) {
+    out_1a += std::to_string(c[pos]);
+    out_1b += "y";
+  }
+  out_1a += " ";
+  out_1b += " ";
+  for ( ; pos > 9; pos--) {
+    out_1a += std::to_string(c[pos]);
+    out_1b += "b";
+  }
+  out_1a += " ";
+  out_1b += " ";
+  for ( ; pos > 6; pos--) {
+    out_1a += std::to_string(c[pos]);
+    out_1b += "a";
+  }
+  out_1a += " ";
+  out_1b += " ";
+  for ( ; pos > 4; pos--) {
+    out_1a += std::to_string(c[pos]);
+    out_1b += "v";
+  }
+  out_1a += " ";
+  out_1b += " ";
+  for ( ; pos > -1; pos--) {
+    out_1a += std::to_string(c[pos]);
+    out_1b += "o";
+  }
+
+  out_1a += " (" + getMnemonic(machine[0] & 0b11111);
+  out_1a += " | a: " + getRegister((machine[0] >> 7) + ((machine[1] << 1) & 0b111));
+  out_1a += ", b: " + getRegister((machine[1] >> 2) & 0b111);
+  out_1a += ", y: " + getRegister((machine[1] >> 5) & 0b111);
+  out_1a += ")\n";
+  out_1b += "\n";
+
+  return out_1a + out_1b + out_2a + out_2b;
+}

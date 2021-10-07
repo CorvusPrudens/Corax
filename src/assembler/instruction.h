@@ -16,6 +16,8 @@ using namespace std;
 using namespace antlr4;
 using tree::ParseTree;
 
+class Assembler; // forward decl
+
 struct Machine {
   uint32_t size = 0;
   vector<uint8_t> bytes;
@@ -91,39 +93,39 @@ class Instruction {
     void setMnemonic(string& mnem);
     void addOperand(Operand* op);
     void setCondition(Operand* cond) { condition = cond; }
-    uint32_t GetSize(Error* err);
-    Machine& Assemble(Error* err);
+    uint32_t GetSize(Assembler* ass);
+    Machine& Assemble(Assembler* ass);
     
-    void AddOpcode(uint32_t& code, Error* err);
-    void AddVariant(uint32_t& code, Operand* op, Error* err);
-    void AddRegisters(uint32_t& code, Operand* reg1, Operand* reg2, Operand* reg3, Error* err);
+    void AddOpcode(uint32_t& code, Assembler* ass);
+    void AddVariant(uint32_t& code, Operand* op, Assembler* ass);
+    void AddRegisters(uint32_t& code, Operand* reg1, Operand* reg2, Operand* reg3, Assembler* ass);
 
-    void AssembleNop(Error* err, bool query);
-    void AssembleLdr(Error* err, bool query);
-    void AssembleStr(Error* err, bool query);
-    void AssembleMov(Error* err, bool query);
+    void AssembleNop(Assembler* ass, bool query);
+    void AssembleLdr(Assembler* ass, bool query);
+    void AssembleStr(Assembler* ass, bool query);
+    void AssembleMov(Assembler* ass, bool query);
 
-    void AssembleCmp(Error* err, bool query);
-    void AssembleCps(Error* err, bool query);
-    void AssembleAdd(Error* err, bool query);
-    void AssembleSub(Error* err, bool query);
+    void AssembleCmp(Assembler* ass, bool query);
+    void AssembleCps(Assembler* ass, bool query);
+    void AssembleAdd(Assembler* ass, bool query);
+    void AssembleSub(Assembler* ass, bool query);
 
-    void AssembleMul(Error* err, bool query);
-    void AssembleDiv(Error* err, bool query);
-    void AssembleMod(Error* err, bool query);
-    void AssembleAnd(Error* err, bool query);
+    void AssembleMul(Assembler* ass, bool query);
+    void AssembleDiv(Assembler* ass, bool query);
+    void AssembleMod(Assembler* ass, bool query);
+    void AssembleAnd(Assembler* ass, bool query);
 
-    void AssembleOr(Error* err, bool query);
-    void AssembleXor(Error* err, bool query);
-    void AssembleNot(Error* err, bool query);
-    void AssembleLsl(Error* err, bool query);
+    void AssembleOr(Assembler* ass, bool query);
+    void AssembleXor(Assembler* ass, bool query);
+    void AssembleNot(Assembler* ass, bool query);
+    void AssembleLsl(Assembler* ass, bool query);
 
-    void AssembleLsr(Error* err, bool query);
-    void AssembleJmp(Error* err, bool query);
-    void AssemblePush(Error* err, bool query);
-    void AssemblePop(Error* err, bool query);
+    void AssembleLsr(Assembler* ass, bool query);
+    void AssembleJmp(Assembler* ass, bool query);
+    void AssemblePush(Assembler* ass, bool query);
+    void AssemblePop(Assembler* ass, bool query);
 
-    typedef void (Instruction::*AssembleInstr)(Error*, bool);
+    typedef void (Instruction::*AssembleInstr)(Assembler*, bool);
 
     inline static unordered_map<string, AssembleInstr> methods = {
       {"nop", &Instruction::AssembleNop},

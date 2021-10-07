@@ -8,12 +8,12 @@ GRUN = java org.antlr.v4.gui.TestRig
 SRC  = ./src
 ANTLR4 = antlr4
 GRAMMARS = grammars
+ASSEMBLER = Enca
 POST = Corax
 PRE = Pre
 JAVA_PATH = build
 BUILD_PATH = ${SRC}/build
 
-ASSEMBLER = ./assembler/assembler.py
 EXAMPLE  = ./examples/test.cx
 
 all: build_compiler
@@ -36,6 +36,8 @@ grammar: ${SRC}/${GRAMMARS}/${POST}.g4 ${SRC}/${GRAMMARS}/${PRE}.g4 clean
 	$(info Building pre-compiler...)
 	@ cd ${SRC}/${GRAMMARS}; ${ANTLR_REL} -visitor -Dlanguage=Cpp -o build/${PRE} ${PRE}.g4;
 	@ cd ${SRC}/${GRAMMARS}; ${ANTLR_REL} -visitor -Dlanguage=Cpp -o build/${PRE} ${PRE}Expr.g4;
+	$(info Building assembler...)
+	@ cd ${SRC}/${GRAMMARS}; ${ANTLR_REL} -visitor -Dlanguage=Cpp -o build/${ASSEMBLER} ${ASSEMBLER}.g4;
 	$(info Done.)
 
 update_and_build: update_compiler build_compiler
@@ -51,12 +53,6 @@ update_compiler:
 update_compiler_debug: 
 	@ if [ ! -d "${SRC}/build" ]; then mkdir ${SRC}/build; fi
 	cd ${SRC}; cmake . -B build -DCMAKE_BUILD_TYPE=Debug;
-
-parse_python: ${ASSEMBLER} ${EXAMPLE}
-	python3 test.py
-
-test_python:
-	cd tests; py.test;
 	
 post_java_build: ${SRC}/${GRAMMARS}/${POST}.g4
 	$(info Building main compiler parse tree...)
