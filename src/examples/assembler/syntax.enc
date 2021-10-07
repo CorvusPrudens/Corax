@@ -1,0 +1,38 @@
+
+data1[] (flash, address=0x2000, align=4, bytes=2) {
+  0x4142, 0xABAB, 0x5A5A, 0xDEAD, 0xBEEF, &data2,
+}
+
+data2[] 0x2
+data3[] (ram) 100
+
+init:
+// this indicates that the load should only occur if the condition is met:
+ldr r0, 20 -> greater 
+// brackets indicate an address, which can be a literal or given by an address
+ldr r1, [0x14] -> less
+ldr r2, [r1]
+ldr r3, [r2, 0b100]
+jmp init
+
+push bp
+// "mov a, b" will be an alias for "add b, 0, a"
+mov bp, sp
+
+// pop the last value off the stack and store in sp
+pop sp
+
+// indicates that the processor should jump to the address stored in r3
+// _if_ the equal flag is set
+jmp [r3] -> equal
+
+// Thus, if you want to jump to the address stored in a relative variable, you might do...
+ldr r0, [bp, 8]
+jmp [r0]
+
+// indicates that the processor should jump to the given literal address
+jump [20]
+
+// A new mnemonic, cps, compares two values and stores the boolean result
+cps greater, r0, 20, r1
+// this means that if r0 is greater than 20, load a 1 in r1, otherwise load a 0

@@ -1,0 +1,198 @@
+
+data[] 0
+
+load_register:
+  ldr r0, data 
+  ldr r1, [42]
+  ldr r2, [r1]
+  ldr r2, [r1, 4]
+  ldr r3, 42 
+
+store_register:
+  str r0, data
+  str r1, [42]
+  str r2, [r1]
+  str r2, [r1, 4]
+
+// skipping mov for now
+compare:
+  cmp r0, r1
+  cmp r0, data
+  cmp r0, [42]
+  cmp r0, [r1]
+  cmp r0, [r1, 4]
+  cmp r0, 42
+
+compare_and_store:
+  cps equal, r0, r1
+  cps equal, r0, r1, r2
+  cps equal, r0, data
+  cps equal, r0, data, r2
+  cps equal, r0, [42]
+  cps equal, r0, [42], r2
+  cps equal, r0, [r1]
+  cps equal, r0, [r1], r2
+  cps equal, r0, [r1, 4]
+  cps equal, r0, [r1, 4], r2
+  cps equal, r0, 42
+  cps equal, r0, 42, r2
+
+add_instruction:
+  add r0, r1
+  add r0, r1, r2
+  add r0, data
+  add r0, data, r2
+  add r0, [42]
+  add r0, [42], r2
+  add r0, [r1]
+  add r0, [r1], r2
+  add r0, [r1, 4]
+  add r0, [r1, 4], r2
+  add r0, 42
+  add r0, 42, r2
+
+subtract_instruction:
+  sub r0, r1
+  sub r0, r1, r2
+  sub r0, data
+  sub r0, data, r2
+  sub r0, [42]
+  sub r0, [42], r2
+  sub r0, [r1]
+  sub r0, [r1], r2
+  sub r0, [r1, 4]
+  sub r0, [r1, 4], r2
+  sub r0, 42
+  sub r0, 42, r2
+
+multiply_instruction:
+  mul r0, r1
+  mul r0, r1, r2
+  mul r0, data
+  mul r0, data, r2
+  mul r0, [42]
+  mul r0, [42], r2
+  mul r0, [r1]
+  mul r0, [r1], r2
+  mul r0, [r1, 4]
+  mul r0, [r1, 4], r2
+  mul r0, 42
+  mul r0, 42, r2
+
+divide_instruction:
+  div r0, r1
+  div r0, r1, r2
+  div r0, data
+  div r0, data, r2
+  div r0, [42]
+  div r0, [42], r2
+  div r0, [r1]
+  div r0, [r1], r2
+  div r0, [r1, 4]
+  div r0, [r1, 4], r2
+  div r0, 42
+  div r0, 42, r2
+
+mod_instruction:
+  mod r0, r1
+  mod r0, r1, r2
+  mod r0, data
+  mod r0, data, r2
+  mod r0, [42]
+  mod r0, [42], r2
+  mod r0, [r1]
+  mod r0, [r1], r2
+  mod r0, [r1, 4]
+  mod r0, [r1, 4], r2
+  mod r0, 42
+  mod r0, 42, r2
+
+and_instruction:
+  and r0, r1
+  and r0, r1, r2
+  and r0, data
+  and r0, data, r2
+  and r0, [42]
+  and r0, [42], r2
+  and r0, [r1]
+  and r0, [r1], r2
+  and r0, [r1, 4]
+  and r0, [r1, 4], r2
+  and r0, 42
+  and r0, 42, r2
+
+or_instruction:
+  or r0, r1
+  or r0, r1, r2
+  or r0, data
+  or r0, data, r2
+  or r0, [42]
+  or r0, [42], r2
+  or r0, [r1]
+  or r0, [r1], r2
+  or r0, [r1, 4]
+  or r0, [r1, 4], r2
+  or r0, 42
+  or r0, 42, r2
+
+xor_instruction:
+  xor r0, r1
+  xor r0, r1, r2
+  xor r0, data
+  xor r0, data, r2
+  xor r0, [42]
+  xor r0, [42], r2
+  xor r0, [r1]
+  xor r0, [r1], r2
+  xor r0, [r1, 4]
+  xor r0, [r1, 4], r2
+  xor r0, 42
+  xor r0, 42, r2
+
+not_instruction:
+  not r0
+  not r0, r1
+  not data, r0
+  not [42], r0
+  not [r1], r0
+  not [r1, 4], r0
+
+logical_shift_left_instruction:
+  lsl r0, r1
+  lsl r0, r1, r2
+  lsl r0, data
+  lsl r0, data, r2
+  lsl r0, [42]
+  lsl r0, [42], r2
+  lsl r0, [r1]
+  lsl r0, [r1], r2
+  lsl r0, [r1, 4]
+  lsl r0, [r1, 4], r2
+  lsl r0, 42
+  lsl r0, 42, r2
+
+logical_shift_right_instruction:
+  lsr r0, r1
+  lsr r0, r1, r2
+  lsr r0, data
+  lsr r0, data, r2
+  lsr r0, [42]
+  lsr r0, [42], r2
+  lsr r0, [r1]
+  lsr r0, [r1], r2
+  lsr r0, [r1, 4]
+  lsr r0, [r1, 4], r2
+  lsr r0, 42
+  lsr r0, 42, r2
+
+jump:
+  jmp jump
+  jmp [42]
+  jmp [r1]
+  jmp [r1, 4]
+
+push_instruction:
+  push r0
+
+pop_instruction:
+  pop r0

@@ -1,0 +1,15 @@
+
+data[] 0
+
+// TODO - this ambiguity should be resolved: (need to specify name of each opcode?)
+//d2[40]
+d2[40] {0x2040}
+d3[256] (flash, align=256) {} // this was neither aligned nor put in the right section
+
+label:
+  ldr r0, 0x20
+  add r0, 1, r1
+
+pointer:
+  ldr r1, &pointer
+  jmp [r1]

@@ -1,0 +1,15 @@
+
+data[] 0
+
+load_register:
+  ldr r0, data
+  ldr r1, [42]
+  ldr r2, [r1]
+  ldr r2, [r1, 4]
+  ldr r3, 42 
+
+//  ldr r0, data  -> carry
+//  ldr r1, [42] -> less
+//  ldr r2, [r1] -> zero
+//  ldr r2, [r1, 4] -> negative
+//  ldr r3, 42  -> equal

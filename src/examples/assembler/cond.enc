@@ -1,0 +1,198 @@
+
+data[] 0
+
+load_register:
+  ldr r0, data  -> carry
+  ldr r1, [42] -> less
+  ldr r2, [r1] -> zero
+  ldr r2, [r1, 4] -> negative
+  ldr r3, 42  -> equal
+
+store_register:
+  str r0, data -> less
+  str r1, [42] -> greater
+  str r2, [r1] -> zero
+  str r2, [r1, 4] -> carry
+
+// skipping mov for now
+compare:
+  cmp r0, r1 -> carry
+  cmp r0, data -> equal
+  cmp r0, [42] -> negative
+  cmp r0, [r1] -> equal
+  cmp r0, [r1, 4] -> zero
+  cmp r0, 42 -> less
+
+compare_and_store:
+  cps equal, r0, r1 -> zero
+  cps equal, r0, r1, r2 -> greater
+  cps equal, r0, data -> zero
+  cps equal, r0, data, r2 -> negative
+  cps equal, r0, [42] -> less
+  cps equal, r0, [42], r2 -> less
+  cps equal, r0, [r1] -> carry
+  cps equal, r0, [r1], r2 -> zero
+  cps equal, r0, [r1, 4] -> less
+  cps equal, r0, [r1, 4], r2 -> greater
+  cps equal, r0, 42 -> less
+  cps equal, r0, 42, r2 -> carry
+
+add_instruction:
+  add r0, r1 -> zero
+  add r0, r1, r2 -> negative
+  add r0, data -> carry
+  add r0, data, r2 -> greater
+  add r0, [42] -> greater
+  add r0, [42], r2 -> negative
+  add r0, [r1] -> carry
+  add r0, [r1], r2 -> greater
+  add r0, [r1, 4] -> less
+  add r0, [r1, 4], r2 -> equal
+  add r0, 42 -> greater
+  add r0, 42, r2 -> zero
+
+subtract_instruction:
+  sub r0, r1 -> greater
+  sub r0, r1, r2 -> less
+  sub r0, data -> zero
+  sub r0, data, r2 -> zero
+  sub r0, [42] -> greater
+  sub r0, [42], r2 -> carry
+  sub r0, [r1] -> zero
+  sub r0, [r1], r2 -> less
+  sub r0, [r1, 4] -> carry
+  sub r0, [r1, 4], r2 -> negative
+  sub r0, 42 -> zero
+  sub r0, 42, r2 -> less
+
+multiply_instruction:
+  mul r0, r1 -> negative
+  mul r0, r1, r2 -> less
+  mul r0, data -> carry
+  mul r0, data, r2 -> zero
+  mul r0, [42] -> zero
+  mul r0, [42], r2 -> greater
+  mul r0, [r1] -> zero
+  mul r0, [r1], r2 -> equal
+  mul r0, [r1, 4] -> greater
+  mul r0, [r1, 4], r2 -> zero
+  mul r0, 42 -> carry
+  mul r0, 42, r2 -> equal
+
+divide_instruction:
+  div r0, r1 -> negative
+  div r0, r1, r2 -> zero
+  div r0, data -> negative
+  div r0, data, r2 -> carry
+  div r0, [42] -> less
+  div r0, [42], r2 -> greater
+  div r0, [r1] -> less
+  div r0, [r1], r2 -> equal
+  div r0, [r1, 4] -> zero
+  div r0, [r1, 4], r2 -> equal
+  div r0, 42 -> greater
+  div r0, 42, r2 -> carry
+
+mod_instruction:
+  mod r0, r1 -> carry
+  mod r0, r1, r2 -> less
+  mod r0, data -> negative
+  mod r0, data, r2 -> less
+  mod r0, [42] -> negative
+  mod r0, [42], r2 -> negative
+  mod r0, [r1] -> equal
+  mod r0, [r1], r2 -> negative
+  mod r0, [r1, 4] -> carry
+  mod r0, [r1, 4], r2 -> carry
+  mod r0, 42 -> greater
+  mod r0, 42, r2 -> zero
+
+and_instruction:
+  and r0, r1 -> equal
+  and r0, r1, r2 -> carry
+  and r0, data -> less
+  and r0, data, r2 -> greater
+  and r0, [42] -> negative
+  and r0, [42], r2 -> carry
+  and r0, [r1] -> zero
+  and r0, [r1], r2 -> negative
+  and r0, [r1, 4] -> greater
+  and r0, [r1, 4], r2 -> zero
+  and r0, 42 -> carry
+  and r0, 42, r2 -> zero
+
+or_instruction:
+  or r0, r1 -> equal
+  or r0, r1, r2 -> equal
+  or r0, data -> negative
+  or r0, data, r2 -> less
+  or r0, [42] -> less
+  or r0, [42], r2 -> negative
+  or r0, [r1] -> zero
+  or r0, [r1], r2 -> equal
+  or r0, [r1, 4] -> carry
+  or r0, [r1, 4], r2 -> zero
+  or r0, 42 -> carry
+  or r0, 42, r2 -> greater
+
+xor_instruction:
+  xor r0, r1 -> carry
+  xor r0, r1, r2 -> greater
+  xor r0, data -> equal
+  xor r0, data, r2 -> equal
+  xor r0, [42] -> negative
+  xor r0, [42], r2 -> less
+  xor r0, [r1] -> carry
+  xor r0, [r1], r2 -> negative
+  xor r0, [r1, 4] -> zero
+  xor r0, [r1, 4], r2 -> zero
+  xor r0, 42 -> greater
+  xor r0, 42, r2 -> equal
+
+not_instruction:
+  not r0 -> zero
+  not r0, r1 -> greater
+  not data, r0 -> zero
+  not [42], r0 -> equal
+  not [r1], r0 -> equal
+  not [r1, 4], r0 -> zero
+
+logical_shift_left_instruction:
+  lsl r0, r1 -> less
+  lsl r0, r1, r2 -> equal
+  lsl r0, data -> negative
+  lsl r0, data, r2 -> equal
+  lsl r0, [42] -> negative
+  lsl r0, [42], r2 -> greater
+  lsl r0, [r1] -> greater
+  lsl r0, [r1], r2 -> equal
+  lsl r0, [r1, 4] -> less
+  lsl r0, [r1, 4], r2 -> zero
+  lsl r0, 42 -> less
+  lsl r0, 42, r2 -> carry
+
+logical_shift_right_instruction:
+  lsr r0, r1 -> carry
+  lsr r0, r1, r2 -> negative
+  lsr r0, data -> equal
+  lsr r0, data, r2 -> greater
+  lsr r0, [42] -> greater
+  lsr r0, [42], r2 -> negative
+  lsr r0, [r1] -> equal
+  lsr r0, [r1], r2 -> carry
+  lsr r0, [r1, 4] -> equal
+  lsr r0, [r1, 4], r2 -> greater
+  lsr r0, 42 -> zero
+  lsr r0, 42, r2 -> zero
+
+jump:
+  jmp jump -> carry
+  jmp [42] -> zero
+  jmp [r1] -> equal
+  jmp [r1, 4] -> negative
+
+push_instruction:
+  push r0 -> negative
+
+pop_instruction:
+  pop r -> greater
