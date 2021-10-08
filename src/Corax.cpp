@@ -69,38 +69,38 @@ int main(int argc, const char* argv[])
   std::cout << assembly;
 
 
-  Assembler enca(assembly, err);
+  // Assembler enca(assembly, err);
 
   comp.Complete();
 
-  for (auto& inst : enca.instructions) {
-    cout << inst.mnemonic << "\n";
-  }
-  for (auto symbol : enca.symbols.ordered) {
-    cout << symbol->name << " " << symbol->address << "\n";
-  }
+  // for (auto& inst : enca.instructions) {
+  //   cout << inst.mnemonic << "\n";
+  // }
+  // for (auto symbol : enca.symbols.ordered) {
+  //   cout << symbol->name << " " << symbol->address << "\n";
+  // }
 
-  cout << "\n";
-  bool debug = true;
-  bool no_output = false;
-  string outname = "bin";
+  // cout << "\n";
+  // bool debug = true;
+  // bool no_output = false;
+  // string outname = "bin";
   
-  if (debug) 
-  {
-    for (auto& inst : enca.instructions) {
-      cout << formatInstruction(inst.machine.bytes) + "\n";
-    }
-  }
+  // if (debug) 
+  // {
+  //   for (auto& inst : enca.instructions) {
+  //     cout << formatInstruction(inst.machine.bytes) + "\n";
+  //   }
+  // }
 
-  if (!no_output) 
-  {
-    ofstream outfile(outname + ".bin", ios::out | ios::binary);
-    for (auto item : enca.machine_code) {
-      outfile << item;
-    }
-    outfile.close();
-    enca.symbols.WriteFiles(outname);
-  }
+  // if (!no_output) 
+  // {
+  //   ofstream outfile(outname + ".bin", ios::out | ios::binary);
+  //   for (auto item : enca.machine_code) {
+  //     outfile << item;
+  //   }
+  //   outfile.close();
+  //   enca.symbols.WriteFiles(outname);
+  // }
 
   return 0;
 }

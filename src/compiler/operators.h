@@ -247,6 +247,9 @@ class OperatorBase {
     // for functions
     virtual void perform(Identifier& f, vector<Result> args, Result& res) { throw 1; }
 
+    // for dereferencing
+    virtual void perform(Result& op1, Result& op2, Result& res) { throw 1; }
+
     // needs access to the symbols table!
     SymbolTable* table;
     // will add the instruction to the current function
@@ -976,4 +979,28 @@ class Call : public OperatorBase {
     }
 
     Instruction::Abstr getAbstr() override { return Instruction::Abstr::CALL; }
+};
+
+// Honestly a bit confusing. Should the deref meat be handle here or in the target?
+class Deref : public OperatorBase {
+  public:
+    using OperatorBase::OperatorBase;
+
+    void perform(Result& op1, Result& op2, Result& res) override {
+
+      // e.g. *(uint16_t*)0x0010
+      if (op1.isConst())
+      {
+        if (op1.type.isPointer())
+        {
+          
+        }
+        else
+        {
+          comp->addNodeError(ctx, "dereferenced value must be a pointer type");
+        }
+      }
+    }
+
+    Instruction::Abstr getAbstr() override { return Instruction::Abstr::DEREF; }
 };

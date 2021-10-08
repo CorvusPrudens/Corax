@@ -146,6 +146,8 @@ class Compiler : CoraxBaseVisitor {
     Any visitPositive(CoraxParser::PositiveContext *ctx) override;
     Any visitDecrementPost(CoraxParser::DecrementPostContext *ctx) override;
     Any visitDecrementUnary(CoraxParser::DecrementUnaryContext *ctx) override;
+    Any visitDereference(CoraxParser::DereferenceContext *ctx) override;
+    Any visitIndexing(CoraxParser::IndexingContext *ctx) override;
     Any visitCall(CoraxParser::CallContext *ctx) override;
     Any visitSizeofType(CoraxParser::SizeofTypeContext *ctx) override;
     Any visitIndirectMember(CoraxParser::IndirectMemberContext *ctx) override;

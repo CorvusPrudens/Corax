@@ -165,6 +165,22 @@ void Compiler::operation(antlr4::tree::ParseTree* ctx, Result op1, OperatorBase&
   results.put(ctx, res);
 }
 
+Any Compiler::visitDereference(CoraxParser::DereferenceContext *ctx)
+{
+
+  
+
+  return nullptr;
+}
+
+Any Compiler::visitIndexing(CoraxParser::IndexingContext *ctx)
+{
+
+
+
+  return nullptr;
+}
+
 Any Compiler::visitCall(CoraxParser::CallContext* ctx)
 {
   
