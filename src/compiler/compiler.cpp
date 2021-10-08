@@ -422,7 +422,7 @@ Any Compiler::visitQualVolatile(CoraxParser::QualVolatileContext* ctx)
   return nullptr;
 }
 
-// this will be all fucky now because we visit type_qual
+// this will be all mucky now because we visit type_qual
 Any Compiler::visitPointer_item(CoraxParser::Pointer_itemContext* ctx)
 {
   Pointer p;
