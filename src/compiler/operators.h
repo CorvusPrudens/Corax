@@ -80,10 +80,11 @@ class OperatorBase {
     virtual void perform(Identifier* id, Result& op2, Result& res) {
 
       if (!validType1(id->dataType)) throw id->dataType;
-      if (!validType2(op2.type)) throw op2.type;
+      Type temp = op2.getType();
+      if (!validType2(temp)) throw op2.type;
 
       int priority1 = fetchPriority(id->dataType);
-      int priority2 = fetchPriority(op2.type);
+      int priority2 = fetchPriority(temp);
 
       Result lhs;
       lhs.setValue(id);
@@ -120,11 +121,12 @@ class OperatorBase {
     }
     virtual void perform(Result& op1, Identifier* id, Result& res) {
 
-      if (!validType1(op1.type)) throw op1.type;
+      Type temp = op1.getType();
+      if (!validType1(temp)) throw temp;
       if (!validType2(id->dataType)) throw id->dataType;
 
       int priority2 = fetchPriority(id->dataType);
-      int priority1 = fetchPriority(op1.type);
+      int priority1 = fetchPriority(temp);
 
       Result rhs;
       rhs.setValue(id);
@@ -758,7 +760,8 @@ class Assign : public OperatorBase {
     using OperatorBase::OperatorBase;
 
     void perform(Identifier* id, Result& op2, Result& res) override {
-      if (op2.type != id->dataType) {
+      Type temp = op2.getType();
+      if (temp != id->dataType) {
         op2.to(id->dataType);
       }
       // in some cases this could be optimized out, but for now we'll
@@ -773,19 +776,36 @@ class Assign : public OperatorBase {
     void perform(Result& op1, Result& op2, Result& res) override {
 
       Type t = op1.id->dataType;
+      Type t2 = op2.getType();
 
-      if (op2.type != t) {
-        op2.to(op1.id->dataType);
+      // if (t2 != t) {
+      //   op2.to(op1.id->dataType);
+      // }
+      // // in some cases this could be optimized out, but for now we'll
+      // // assume it should be an operation
+      // // id.assignment = op2;
+      // func->function.add(Instruction(ctx, getAbstr(), op2, op1.id));
+
+      if (t2 != t) 
+      {
+        Result temp;
+        temp.setValue(op2.id);
+        Result rhs;
+        rhs.setValue(op1.id);
+        func->function.add(Instruction(ctx, Instruction::Abstr::CONVERT, temp, rhs, op1.id));
       }
-      // in some cases this could be optimized out, but for now we'll
-      // assume it should be an operation
-      // id.assignment = op2;
-      func->function.add(Instruction(ctx, getAbstr(), op2, op1.id));
+      else 
+      {
+        Result temp;
+        temp.setValue(op2.id);
+        func->function.add(Instruction(ctx, getAbstr(), temp, op1.id));
+      }
       
       // what is this supposed to be set to??
       res.setValue(0);
     }
 
+    // TODO -- this needs information from the result object (to determine if the value is dereferenced!)
     void perform(Identifier* id1, Identifier* id2, Result& res) override {
       if (id2->dataType != id1->dataType) 
       {
@@ -975,7 +995,8 @@ class Call : public OperatorBase {
       Identifier& ass = manageTemps(f->dataType);
       
       for (int i = args.size() - 1; i > -1; i--) {
-        if (args[i].getType() != f->members[i].dataType) {
+        Type temp = args[i].getType();
+        if (temp != f->members[i].dataType) {
           Identifier* tempass = &manageTemps(f->members[i].dataType);
           if (args[i].isConst())
           {

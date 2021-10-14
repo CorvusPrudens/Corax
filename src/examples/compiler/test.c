@@ -32,10 +32,13 @@
 //   b += a + 100;
 //   return b;
 // }
+int glob = 10;
 
 void pointers(int a, int* buffer)
 {
   // buffer[0] = a;
   // buffer++;
-  *buffer = 100;
+  // *buffer = 100;
+  glob = *buffer; // TODO -- this doesn't actually do the dereferencing!
+  return;
 }

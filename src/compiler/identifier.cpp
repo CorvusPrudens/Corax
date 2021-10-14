@@ -180,6 +180,7 @@ Result::Result(const Result& other)
     type = other.type;
   }
   kind = other.kind;
+  dereference_level = other.dereference_level;
 }
 
 size_t Result::getSize()
@@ -187,12 +188,18 @@ size_t Result::getSize()
   return getType().size();
 }
 
-Type& Result::getType()
+Type Result::getType()
 {
-  if (kind == Kind::ID)
-    return id->dataType;
+  Type t;
+  if (kind == Kind::ID || (kind == Kind::POINTER && id != nullptr))
+    t = id->dataType;
   else
-    return type;
+    t = type;
+  
+  for (int i = 0; i < dereference_level; i++)
+    t.pointers.pop_back();
+  
+  return t;
 }
 
 #define T_EQUAL(T) \

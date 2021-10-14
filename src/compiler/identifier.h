@@ -122,7 +122,10 @@ class Result {
     Type type;
     Kind kind = Kind::VOID;
 
+    unsigned int dereference_level;
+
     Result() {
+      dereference_level = 0;
       for (int i = 0; i < buff_size; i++)
         value[i] = 0;
     }
@@ -158,7 +161,7 @@ class Result {
     }
 
     size_t getSize();
-    Type& getType();
+    Type getType();
 
     void setValue(long double val);
     void setValue(double val);

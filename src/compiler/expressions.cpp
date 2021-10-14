@@ -97,7 +97,10 @@ void Compiler::operation(antlr4::tree::ParseTree* ctx, Result op1, Result op2, O
   } else if (op2.isConst()) {
     oper.perform(op1.id, op2, res);
   } else {
-    oper.perform(op1.id, op2.id, res);
+    if (oper.getAbstr() == Instruction::ASSIGN)
+      oper.perform(op1, op2, res);
+    else
+      oper.perform(op1.id, op2.id, res);
   }
 
   results.put(ctx, res);
@@ -169,9 +172,10 @@ Any Compiler::visitDereference(CoraxParser::DereferenceContext *ctx)
 {
   visitChildren(ctx);
   // Deref oper(ctx, currentScope, currentFunction, this);
-
+  Result newres = results.get(ctx->expr_cast());
+  newres.dereference_level++;
   // operation(ctx, results.get(ctx->expr_cast()), oper);
-  results.put(ctx, results.get(ctx->expr_cast()));
+  results.put(ctx, newres);
 
   return nullptr;
 }
