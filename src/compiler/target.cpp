@@ -126,6 +126,7 @@ Register::Register(string n, Data d, Register::Rank r, unsigned int b)
   requires_storage = false;
   latest = 0;
   operationStep = 0;
+  is_pointer = false;
 }
 
 Register::Register(const Register& other)
@@ -139,6 +140,7 @@ Register::Register(const Register& other)
   requires_storage = other.requires_storage;
   latest = other.latest;
   operationStep = other.operationStep;
+  is_pointer = other.is_pointer;
 }
 
 void Register::load(Result& id)
@@ -148,6 +150,10 @@ void Register::load(Result& id)
   {
     latest = id.id->latest;
     status = Status::USED;
+    if (id.id->dataType.isPointer())
+      is_pointer = true;
+    else
+      is_pointer = false;
   }
   else
   {
@@ -162,6 +168,7 @@ void Register::flush()
   status = Status::FREE;
   requires_storage = false;
   operationStep = 0;
+  is_pointer = false;
 }
 
 LineArg::LineArg(Register& r)
@@ -191,6 +198,12 @@ string LineArg::to_string()
   switch (t)
   {
     case TYPE::REGISTER:
+    {
+      if (reg->is_pointer)
+        return "[" + reg->name + "]";
+      else
+        return reg->name;
+    }
       return reg->name;
     case TYPE::RESULT:
       return result->to_string();
@@ -284,6 +297,7 @@ void BaseTarget::Translate(Identifier& function)
   // }
 
   // store any remaining values before returning
+  current_scope = function.funcTable;
   StoreAll(function, function.function.instructions.back());
   SaveUsedRegisters(function); // save all the registers that were used (prepending code)
   translations.back().AssignArgumentOffsets(function);
@@ -303,13 +317,13 @@ void BaseTarget::UpdateRegister(Register& reg)
 
 void BaseTarget::unsupported(Instruction& inst)
 {
-  string errmess = inst.name() + " operation is not yet support for \"" + targetName + "\"";
+  string errmess = inst.name() + " operation is not yet supported for \"" + targetName + "\"";
   comp->addNodeError(inst.ctx, errmess);
 }
 
 void BaseTarget::unsupported(string mess)
 {
-  string errmess = mess + " operation is not yet support for \"" + targetName + "\"";
+  string errmess = mess + " operation is not yet supported for \"" + targetName + "\"";
   comp->err->AddError(mess, -1, "");
 }
 
@@ -378,10 +392,11 @@ void BaseTarget::StoreAll(Identifier& function, Instruction& inst, bool include)
     {
       try{
         function.funcTable->GetLocalSymbol(reg.loaded->id->name);
-        if (reg.loaded->id->dataType.qualifiers & Qualifier::VOLATILE) {
-          // if it's volatile, store it anyway
-          StoreRegister(reg, inst);
-        }
+        // if (reg.loaded->id->dataType.qualifiers & Qualifier::VOLATILE) {
+        //   // if it's volatile, store it anyway
+        //   StoreRegister(reg, inst);
+        // }
+        StoreRegister(reg, inst);
       } catch (int e) {
         // bit of a hacky way to determine if it's a global, but it works...
         try {
@@ -478,7 +493,7 @@ Register& BaseTarget::PrepareResult(Result& res, Instruction& inst)
 
 // TODO -- this should look for the register with the _latest_ copy of the
 // intended assignee
-Register& BaseTarget::PrepareAssign(Identifier& res, Instruction& inst)
+Register& BaseTarget::PrepareAssign(Identifier* res, Instruction& inst)
 {
   // Check if it's already loaded and not out-of-date
   for (auto& reg : registers)
@@ -492,7 +507,7 @@ Register& BaseTarget::PrepareAssign(Identifier& res, Instruction& inst)
   }
 
   Register* reg;
-  Register::Data d = FetchDataType(res);
+  Register::Data d = FetchDataType(*res);
   
   reg = &GetLastUsed(inst, d);
 
@@ -503,7 +518,7 @@ Register& BaseTarget::PrepareAssign(Identifier& res, Instruction& inst)
   return *reg;
 }
 
-Register& BaseTarget::CheckLoaded(Identifier& res)
+Register& BaseTarget::CheckLoaded(Identifier* res)
 {
   // Check if it's already loaded and not out-of-date
   for (auto& reg : registers)
@@ -517,10 +532,13 @@ Register& BaseTarget::CheckLoaded(Identifier& res)
   throw 1;
 }
 
-Result& BaseTarget::GenerateResult(Identifier& id)
+Result& BaseTarget::GenerateResult(Identifier* id, bool is_pointer)
 {
   Result res;
-  res.setValue(id);
+  if (is_pointer)
+    res.setPointer(id);
+  else
+    res.setValue(id);
   temp_results.push_back(res);
   return temp_results.back();
 }

@@ -111,6 +111,7 @@ class Result {
     enum Kind {
       VOID = 0,
       ID,
+      POINTER,
       STANDARD,
       STRUCT, // dunno if we'll use these?
       UNION,
@@ -130,7 +131,7 @@ class Result {
     // copy constructor
     Result(const Result& other);
 
-    bool isConst() { return kind != Kind::ID; }
+    bool isConst() { return kind != Kind::ID && kind != Kind::POINTER; }
     bool equal(Result& other, bool permissive = false);
     bool operator==(Result& other) { return equal(other); }
     bool operator!=(Result& other) { return !equal(other); }
@@ -142,6 +143,18 @@ class Result {
     {
       kind = Kind::ID;
       id = &new_id;
+    }
+
+    void setValue(Identifier* new_id)
+    {
+      kind = Kind::ID;
+      id = new_id;
+    }
+
+    void setPointer(Identifier* target)
+    {
+      kind = Kind::POINTER;
+      id = target;
     }
 
     size_t getSize();
@@ -250,13 +263,13 @@ class Instruction {
 
     Instruction(ParseTree* c, Abstr i); // for end of statements / nops
     Instruction(ParseTree* c, Abstr i, Result op1); // for returns
-    Instruction(ParseTree* c, Abstr i, Identifier& label);
+    Instruction(ParseTree* c, Abstr i, Identifier* label);
     Instruction(ParseTree* c, Abstr i, Result op1, Result op2);
-    Instruction(ParseTree* c, Abstr i, Identifier& func, vector<Result> a, Identifier& ass); // for function calls
-    Instruction(ParseTree* c, Abstr i, Result op1, Identifier& ass);
-    Instruction(ParseTree* c, Abstr i, Result op1, Result op2, Identifier& ass);
-    Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2, Identifier& lab1, Identifier& lab2);
-    Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2, Identifier& ass);
+    Instruction(ParseTree* c, Abstr i, Identifier* func, vector<Result> a, Identifier* ass); // for function calls
+    Instruction(ParseTree* c, Abstr i, Result op1, Identifier* ass);
+    Instruction(ParseTree* c, Abstr i, Result op1, Result op2, Identifier* ass);
+    Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2, Identifier* lab1, Identifier* lab2);
+    Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2, Identifier* ass);
     Instruction(const Instruction& other);
     ~Instruction() {}
 

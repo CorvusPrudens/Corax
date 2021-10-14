@@ -171,7 +171,7 @@ bool Identifier::equal(Identifier* other)
 
 Result::Result(const Result& other)
 {
-  if (other.kind == Kind::ID)
+  if (other.kind == Kind::ID || other.kind == Kind::POINTER)
     id = other.id;
   else
   {
@@ -206,7 +206,7 @@ bool Result::equal(Result& other, bool permissive)
   if (kind != other.kind)
     return false;
   
-  if (kind == Kind::ID)
+  if (kind == Kind::ID || kind == Kind::POINTER)
     return other.id == id; // see if they point to the same place
 
   // If they're not the same type (and we're not permissive...)
@@ -460,32 +460,32 @@ Instruction::Instruction(ParseTree* c, Abstr i, Result op1) {
   single = true;
 }
 
-Instruction::Instruction(ParseTree* c, Abstr i, Identifier& label)
+Instruction::Instruction(ParseTree* c, Abstr i, Identifier* label)
 {
   SET_NULLS
   ctx = c;
   instr = i;
-  label1 = &label;
+  label1 = label;
 }
 
-Instruction::Instruction(ParseTree* c, Abstr i, Identifier& func, vector<Result> a, Identifier& ass) 
+Instruction::Instruction(ParseTree* c, Abstr i, Identifier* func, vector<Result> a, Identifier* ass) 
 {
   SET_NULLS
   ctx = c;
   instr = i;
-  function = &func;
-  assignment = &ass;
+  function = func;
+  assignment = ass;
   args = a;
 }
 
-Instruction::Instruction(ParseTree* c, Abstr i, Result op1, Identifier& ass) 
+Instruction::Instruction(ParseTree* c, Abstr i, Result op1, Identifier* ass) 
 {
   SET_NULLS
   ctx = c;
   instr = i;
   operand1 = op1;
   single = true;
-  assignment = &ass;
+  assignment = ass;
 }
 
 Instruction::Instruction(ParseTree* c, Abstr i, Result op1, Result op2)
@@ -498,7 +498,7 @@ Instruction::Instruction(ParseTree* c, Abstr i, Result op1, Result op2)
   single = false;
 }
 
-Instruction::Instruction(ParseTree* c, Abstr i, Result op1, Result op2, Identifier& ass) 
+Instruction::Instruction(ParseTree* c, Abstr i, Result op1, Result op2, Identifier* ass) 
 {
   SET_NULLS
   ctx = c;
@@ -506,10 +506,10 @@ Instruction::Instruction(ParseTree* c, Abstr i, Result op1, Result op2, Identifi
   operand1 = op1;
   operand2 = op2;
   single = false;
-  assignment = &ass;
+  assignment = ass;
 }
 
-Instruction::Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2, Identifier& ass) 
+Instruction::Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2, Identifier* ass) 
 {
   SET_NULLS
   ctx = c;
@@ -518,10 +518,10 @@ Instruction::Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2,
   operand1 = op1;
   operand2 = op2;
   single = false;
-  assignment = &ass;
+  assignment = ass;
 }
 
-Instruction::Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2, Identifier& lab1, Identifier& lab2)
+Instruction::Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2, Identifier* lab1, Identifier* lab2)
 {
   SET_NULLS
   ctx = c;
@@ -529,8 +529,8 @@ Instruction::Instruction(ParseTree* c, Abstr i, Cond co, Result op1, Result op2,
   condition = co;
   operand1 = op1;
   operand2 = op2;
-  label1 = &lab1;
-  label2 = &lab2;
+  label1 = lab1;
+  label2 = lab2;
   single = false;
 }
 

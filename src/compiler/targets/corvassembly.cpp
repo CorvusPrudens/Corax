@@ -28,7 +28,7 @@ void CorvassemblyTarget::StandardInstruction(Instruction& inst, string mnemonic)
   if (inst.operand1.isConst())
   {
     Register& op2 = PrepareResult(inst.operand2, inst);
-    Register& ass = PrepareAssign(*inst.assignment, inst);
+    Register& ass = PrepareAssign(inst.assignment, inst);
 
     if (&ass == &op2)
       AddLine(mnemonic, inst, {LineArg(op2), LineArg(inst.operand1)});
@@ -41,7 +41,7 @@ void CorvassemblyTarget::StandardInstruction(Instruction& inst, string mnemonic)
   else if (inst.operand2.isConst())
   {
     Register& op1 = PrepareResult(inst.operand1, inst);
-    Register& ass = PrepareAssign(*inst.assignment, inst);
+    Register& ass = PrepareAssign(inst.assignment, inst);
 
     if (&ass == &op1)
       AddLine(mnemonic, inst, {LineArg(op1), LineArg(inst.operand2)});
@@ -64,7 +64,7 @@ void CorvassemblyTarget::StandardInstruction(Instruction& inst, string mnemonic)
     // otherwise it should just come from the variable (e.g. add r0, variable)
     // Register& op2 = PrepareResult(inst.operand2, inst);
 
-    Register& ass = PrepareAssign(*inst.assignment, inst);
+    Register& ass = PrepareAssign(inst.assignment, inst);
 
     
     // if (&ass == &op1)
@@ -79,7 +79,7 @@ void CorvassemblyTarget::StandardInstruction(Instruction& inst, string mnemonic)
 
     try 
     {
-      Register& op2 = CheckLoaded(*inst.operand2.id);
+      Register& op2 = CheckLoaded(inst.operand2.id);
       AddLine(mnemonic, inst, {LineArg(op1), LineArg(op2), LineArg(ass)});
     } 
     catch (int e)
@@ -225,14 +225,10 @@ void CorvassemblyTarget::TranslateCmp(Instruction& inst)
   // }
   // UpdateRegister(ass);
 }
-void CorvassemblyTarget::TranslateDeref(Instruction& inst)
-{
-  unsupported(inst);
-}
 void CorvassemblyTarget::TranslateNot(Instruction& inst)
 {
   Register& op1 = PrepareResult(inst.operand1, inst);
-  Register& ass = PrepareAssign(*inst.assignment, inst);
+  Register& ass = PrepareAssign(inst.assignment, inst);
 
   if (&ass == &op1)
     AddLine("not", inst, {LineArg(op1)});
@@ -260,14 +256,14 @@ void CorvassemblyTarget::TranslateAssign(Instruction& inst)
     Register& op2 = PrepareResult(inst.operand1, inst);
 
     try {
-      Register& ass = CheckLoaded(*inst.assignment);
+      Register& ass = CheckLoaded(inst.assignment);
       // AddLine("add " + LineArg(op1) + ", 0, " + LineArg(ass));
       AddLine("add", inst, {LineArg(op2), LineArg("0"), LineArg(ass)});
       ManageStorage(ass, inst);
     } catch (int e) {
       // for now, since a register can only hold one pointer,
       // the loaded value will change to the assignee
-      Result& temp = GenerateResult(*inst.assignment);
+      Result& temp = GenerateResult(inst.assignment, inst.assignment->dataType.isPointer());
       // this would be ideal, but the register needs a pointer to a result!!
       op2.load(temp);
       UpdateRegister(op2);
@@ -288,7 +284,7 @@ void CorvassemblyTarget::TranslateCall(Instruction& inst)
   }
   // AddLine("push pc, 4");
   AddLine("push", inst, {LineArg(GetProgramCounter()), LineArg("4")});
-  Result& res = GenerateResult(*inst.function);
+  Result& res = GenerateResult(inst.function);
   AddLine("jmp", inst, {LineArg(res)});
 
   size_t sp_offset = 0;
@@ -297,13 +293,13 @@ void CorvassemblyTarget::TranslateCall(Instruction& inst)
   AddLine("add", inst, {LineArg(GetStackPointer()), LineArg(std::to_string(sp_offset + 1))});
   // Register& reg = PrepareAssign(inst.assignment);
   try {
-    Register& ass = CheckLoaded(*inst.assignment);
+    Register& ass = CheckLoaded(inst.assignment);
     // AddLine("add " + returnVal->name + ", 0, " + LineArg(ass));
     AddLine("add", inst, {LineArg(*returnVal), LineArg("0"), LineArg(ass)});
     UpdateRegister(ass);
     ManageStorage(ass, inst);
   } catch (int e) {
-    Result& res = GenerateResult(*inst.assignment);
+    Result& res = GenerateResult(inst.assignment);
     returnVal->load(res);
     UpdateRegister(*returnVal);
     ManageStorage(*returnVal, inst);
@@ -362,8 +358,8 @@ void CorvassemblyTarget::TranslateConditional(Instruction& inst)
     default:
     case Instruction::GREATER:
     {
-      Result& res1 = GenerateResult(*inst.label1);
-      Result& res2 = GenerateResult(*inst.label2);
+      Result& res1 = GenerateResult(inst.label1);
+      Result& res2 = GenerateResult(inst.label2);
       AddLine("joc", inst, {LineArg("greater"), LineArg(res1)});
       AddLine("jmp", inst, {LineArg(res2)});
     }
@@ -407,7 +403,8 @@ void CorvassemblyTarget::TranslateStore(Register& reg, Instruction& inst)
     if (!allocated)
       translations.back().allocated_variables[target_scope].push_back(reg.loaded->id);
 
-    AddLine("str", inst, {LineArg(reg), LineArg(*reg.loaded)});
+    // AddLine("str", inst, {LineArg(reg), LineArg(*reg.loaded)});
+    TranslateStore(reg, inst, *reg.loaded->id);
   }
 }
 void CorvassemblyTarget::TranslateStore(Register& reg, Instruction& inst, Identifier& id)
@@ -415,8 +412,20 @@ void CorvassemblyTarget::TranslateStore(Register& reg, Instruction& inst, Identi
   // string line = "";
   // line += "str " + reg.name + ", " + id.name;
   // AddLine(line);
-  Result& res = GenerateResult(id);
-  AddLine("Str", inst, {LineArg(reg), LineArg(res)});
+
+  if (id.dataType.isPointer())
+  {
+    Result& tempres = GenerateResult(&id, true);
+    Register& pointer = PrepareResult(tempres, inst);
+    AddLine("str", inst, {LineArg(reg), LineArg(pointer)});
+  }
+  else
+  {
+    Result& res = GenerateResult(&id);
+    AddLine("str", inst, {LineArg(reg), LineArg(res)});
+  } 
+  
+  
 }
 void CorvassemblyTarget::TranslateLoad(Register& reg, Instruction& inst, Result& res)
 {
@@ -492,4 +501,14 @@ void CorvassemblyTarget::TranslateDeclare(Instruction& inst)
   // If a symbol is declared, the scope will of course always be the current one
   auto& translation = translations.back();
   translation.allocated_variables[current_scope].push_back(inst.label1);
+}
+
+void CorvassemblyTarget::TranslateDeref(Instruction& inst)
+{
+  // Register& pointer = PrepareResult(inst.operand1, inst);
+  // Result& res = GenerateResult(inst.assignment);
+  // Register& value = PrepareResult(res, inst);
+  Register& pointer = PrepareResult(inst.operand1, inst);
+
+  // AddLine("ldr", inst, {LineArg(value), LineArg(pointer)});
 }

@@ -60,6 +60,7 @@ struct Register {
   Result* loaded;
   unsigned int latest;
   unsigned int operationStep;
+  bool is_pointer;
 };
 
 struct LineArg {
@@ -234,9 +235,9 @@ class BaseTarget {
     /** Similar to PrepareResult without loading any values --
      *  i.e. for setting up assignments
      */
-    virtual Register& PrepareAssign(Identifier& id, Instruction& inst);
-    virtual Register& CheckLoaded(Identifier& id);
-    virtual Result& GenerateResult(Identifier& id);
+    virtual Register& PrepareAssign(Identifier* id, Instruction& inst);
+    virtual Register& CheckLoaded(Identifier* id);
+    virtual Result& GenerateResult(Identifier* id, bool is_pointer = false);
     virtual Result& GenerateResult(Result& res);
     virtual void ManageStorage(Register& reg, Instruction& inst);
 

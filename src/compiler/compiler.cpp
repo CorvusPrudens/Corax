@@ -181,7 +181,7 @@ Any Compiler::visitDeclarator(CoraxParser::DeclaratorContext* ctx)
     currentScope->AddSymbol(tempid);
     if (currentScope->scope != SymbolTable::Scope::GLOBAL)
     {
-      currentFunction->function.add(Instruction(ctx, Instruction::DECLARE, currentScope->GetLast()));
+      currentFunction->function.add(Instruction(ctx, Instruction::DECLARE, &currentScope->GetLast()));
     }
   } catch (int e) {
     string errmess;

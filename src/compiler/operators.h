@@ -77,12 +77,12 @@ class OperatorBase {
     // Currently, in an operation between an lvalue and constant, the
     // constant is always converted to the lvalue's type (which may
     // not always be desirable?)
-    virtual void perform(Identifier& id, Result& op2, Result& res) {
+    virtual void perform(Identifier* id, Result& op2, Result& res) {
 
-      if (!validType1(id.dataType)) throw id.dataType;
+      if (!validType1(id->dataType)) throw id->dataType;
       if (!validType2(op2.type)) throw op2.type;
 
-      int priority1 = fetchPriority(id.dataType);
+      int priority1 = fetchPriority(id->dataType);
       int priority2 = fetchPriority(op2.type);
 
       Result lhs;
@@ -95,11 +95,11 @@ class OperatorBase {
       Identifier& ass = manageTemps(lhs.id->dataType);
 
       if (priority1 == priority2) {
-        func->function.add(Instruction(ctx, getAbstr(), getCond(), lhs, op2, ass));
+        func->function.add(Instruction(ctx, getAbstr(), getCond(), lhs, op2, &ass));
       }
       else {
-        op2.to(id.dataType);
-        func->function.add(Instruction(ctx, getAbstr(), getCond(), lhs, op2, ass));
+        op2.to(id->dataType);
+        func->function.add(Instruction(ctx, getAbstr(), getCond(), lhs, op2, &ass));
       }
       // else if (priority1 < priority2) {
       //   op2.to(id.dataType);
@@ -118,12 +118,12 @@ class OperatorBase {
       // }
       res.setValue(ass);
     }
-    virtual void perform(Result& op1, Identifier& id, Result& res) {
+    virtual void perform(Result& op1, Identifier* id, Result& res) {
 
       if (!validType1(op1.type)) throw op1.type;
-      if (!validType2(id.dataType)) throw id.dataType;
+      if (!validType2(id->dataType)) throw id->dataType;
 
-      int priority2 = fetchPriority(id.dataType);
+      int priority2 = fetchPriority(id->dataType);
       int priority1 = fetchPriority(op1.type);
 
       Result rhs;
@@ -136,12 +136,12 @@ class OperatorBase {
 
       if (priority1 == priority2) {
         ass = &manageTemps(rhs.id->dataType);
-        func->function.add(Instruction(ctx, getAbstr(), getCond(), op1, rhs, *ass));        
+        func->function.add(Instruction(ctx, getAbstr(), getCond(), op1, rhs, ass));        
       }
       else {
-        op1.to(id.dataType);
+        op1.to(id->dataType);
         ass = &manageTemps(rhs.id->dataType);
-        func->function.add(Instruction(ctx, getAbstr(), getCond(), op1, rhs, *ass));
+        func->function.add(Instruction(ctx, getAbstr(), getCond(), op1, rhs, ass));
       }
       // else if (priority1 < priority2) {
 
@@ -161,13 +161,13 @@ class OperatorBase {
       // }
       res.setValue(*ass);
     }
-    virtual void perform(Identifier& id1, Identifier& id2, Result& res) {
+    virtual void perform(Identifier* id1, Identifier* id2, Result& res) {
 
-      if (!validType1(id1.dataType)) throw id1.dataType;
-      if (!validType2(id2.dataType)) throw id2.dataType;
+      if (!validType1(id1->dataType)) throw id1->dataType;
+      if (!validType2(id2->dataType)) throw id2->dataType;
       
-      int priority1 = fetchPriority(id1.dataType);
-      int priority2 = fetchPriority(id2.dataType);
+      int priority1 = fetchPriority(id1->dataType);
+      int priority2 = fetchPriority(id2->dataType);
 
       Result lhs;
       lhs.setValue(id1);
@@ -182,28 +182,28 @@ class OperatorBase {
       if (priority1 == priority2)
       {
         // ass.dataType = id1.dataType;
-        ass = &manageTemps(id1.dataType);
-        func->function.add(Instruction(ctx, getAbstr(), getCond(), lhs, rhs, *ass));
+        ass = &manageTemps(id1->dataType);
+        func->function.add(Instruction(ctx, getAbstr(), getCond(), lhs, rhs, ass));
       }
       else if (priority1 < priority2)
       {
         // ass.dataType = id1.dataType;
-        ass = &manageTemps(id1.dataType);
+        ass = &manageTemps(id1->dataType);
         Result temp;
         temp.setValue(*ass);
 
-        func->function.add(Instruction(ctx, Instruction::Abstr::CONVERT, rhs, lhs, *ass));
-        func->function.add(Instruction(ctx, getAbstr(), getCond(), lhs, temp, *ass));
+        func->function.add(Instruction(ctx, Instruction::Abstr::CONVERT, rhs, lhs, ass));
+        func->function.add(Instruction(ctx, getAbstr(), getCond(), lhs, temp, ass));
       }
       else if (priority1 > priority2)
       {
         // ass.dataType = id2.dataType;
-        ass = &manageTemps(id2.dataType);
+        ass = &manageTemps(id2->dataType);
         Result temp;
         temp.setValue(*ass);
 
-        func->function.add(Instruction(ctx, Instruction::Abstr::CONVERT, lhs, rhs, *ass));
-        func->function.add(Instruction(ctx, getAbstr(), getCond(), temp, rhs, *ass));
+        func->function.add(Instruction(ctx, Instruction::Abstr::CONVERT, lhs, rhs, ass));
+        func->function.add(Instruction(ctx, getAbstr(), getCond(), temp, rhs, ass));
       }
       res.setValue(*ass);
     }
@@ -226,9 +226,9 @@ class OperatorBase {
     virtual void perform(signed char v1, Result& res) { throw signed_char_; }
     virtual void perform(char v1, Result& res) { throw char_; }
 
-    virtual void perform(Identifier& id, Result& res) {
+    virtual void perform(Identifier* id, Result& res) {
 
-      if (!validType1(id.dataType)) throw id.dataType;
+      if (!validType1(id->dataType)) throw id->dataType;
 
       Result lhs;
       lhs.setValue(id);
@@ -238,17 +238,19 @@ class OperatorBase {
       // ass.name = tempname;
 
       // ass.dataType = lhs.id.dataType;
-      Identifier& ass = manageTemps(lhs.id->dataType);
+      Identifier* ass = &manageTemps(lhs.id->dataType);
       func->function.add(Instruction(ctx, getAbstr(), lhs, ass));
 
       res.setValue(ass);
     }
 
     // for functions
-    virtual void perform(Identifier& f, vector<Result> args, Result& res) { throw 1; }
+    virtual void perform(Identifier* f, vector<Result> args, Result& res) { throw 1; }
 
     // for dereferencing
     virtual void perform(Result& op1, Result& op2, Result& res) { throw 1; }
+
+    virtual void perform(Result& op1, Result& res) { throw 1; }
 
     // needs access to the symbols table!
     SymbolTable* table;
@@ -446,7 +448,7 @@ class And : public OperatorBase {
     STANDARD_PERFORM
     OPERATION_LOG(&&)
 
-    virtual void perform(Result& op1, Identifier& id, Result& res) override {
+    virtual void perform(Result& op1, Identifier* id, Result& res) override {
       Result rhs;
       rhs.setValue(id);
 
@@ -456,14 +458,14 @@ class And : public OperatorBase {
       // ass.dataType.type_specifiers = {"int"};
       Type tt;
       tt.type_specifiers = {"int"};
-      Identifier& ass = manageTemps(tt);
+      Identifier* ass = &manageTemps(tt);
 
       func->function.add(Instruction(ctx, getAbstr(), op1, rhs, ass));
   
       res.setValue(ass);
     }
 
-    virtual void perform(Identifier& id1, Result& op2, Result& res) override {
+    virtual void perform(Identifier* id1, Result& op2, Result& res) override {
       Result lhs;
       lhs.setValue(id1);
 
@@ -473,14 +475,14 @@ class And : public OperatorBase {
       // ass.dataType.type_specifiers = {"int"};
       Type tt;
       tt.type_specifiers = {"int"};
-      Identifier& ass = manageTemps(tt);
+      Identifier* ass = &manageTemps(tt);
 
       func->function.add(Instruction(ctx, getAbstr(), lhs, op2, ass));
   
       res.setValue(ass);
     }
 
-    virtual void perform(Identifier& id1, Identifier& id2, Result& res) override {
+    virtual void perform(Identifier* id1, Identifier* id2, Result& res) override {
       Result lhs;
       lhs.setValue(id1);
       Result rhs;
@@ -492,7 +494,7 @@ class And : public OperatorBase {
       // ass.dataType.type_specifiers = {"int"};
       Type tt;
       tt.type_specifiers = {"int"};
-      Identifier& ass = manageTemps(tt);
+      Identifier* ass = &manageTemps(tt);
 
       func->function.add(Instruction(ctx, getAbstr(), lhs, rhs, ass));
   
@@ -509,7 +511,7 @@ class Or : public OperatorBase {
     STANDARD_PERFORM
     OPERATION_LOG(||)
 
-    virtual void perform(Result& op1, Identifier& id, Result& res) override {
+    virtual void perform(Result& op1, Identifier* id, Result& res) override {
       Result rhs;
       rhs.setValue(id);
 
@@ -519,14 +521,14 @@ class Or : public OperatorBase {
       // ass.dataType.type_specifiers = {"int"};
       Type tt;
       tt.type_specifiers = {"int"};
-      Identifier& ass = manageTemps(tt);
+      Identifier* ass = &manageTemps(tt);
 
       func->function.add(Instruction(ctx, getAbstr(), op1, rhs, ass));
   
       res.setValue(ass);
     }
 
-    virtual void perform(Identifier& id1, Result& op2, Result& res) override {
+    virtual void perform(Identifier* id1, Result& op2, Result& res) override {
       Result lhs;
       lhs.setValue(id1);
 
@@ -536,14 +538,14 @@ class Or : public OperatorBase {
       // ass.dataType.type_specifiers = {"int"};
       Type tt;
       tt.type_specifiers = {"int"};
-      Identifier& ass = manageTemps(tt);
+      Identifier* ass = &manageTemps(tt);
 
       func->function.add(Instruction(ctx, getAbstr(), lhs, op2, ass));
   
       res.setValue(ass);
     }
 
-    virtual void perform(Identifier& id1, Identifier& id2, Result& res) override {
+    virtual void perform(Identifier* id1, Identifier* id2, Result& res) override {
       Result lhs;
       lhs.setValue(id1);
       Result rhs;
@@ -555,7 +557,7 @@ class Or : public OperatorBase {
       // ass.dataType.type_specifiers = {"int"};
       Type tt;
       tt.type_specifiers = {"int"};
-      Identifier& ass = manageTemps(tt);
+      Identifier* ass = &manageTemps(tt);
 
       func->function.add(Instruction(ctx, getAbstr(), lhs, rhs, ass));
   
@@ -729,7 +731,7 @@ class Negate : public OperatorBase {
       res.setValue(out);
     }
 
-    virtual void perform(Identifier& id1, Result& res) override {
+    virtual void perform(Identifier* id1, Result& res) override {
       Result lhs;
       lhs.setValue(id1);
 
@@ -739,7 +741,7 @@ class Negate : public OperatorBase {
       // ass.dataType.type_specifiers = {"int"};
       Type tt;
       tt.type_specifiers = {"int"};
-      Identifier& ass = manageTemps(tt);
+      Identifier* ass = &manageTemps(tt);
 
       func->function.add(Instruction(ctx, getAbstr(), lhs, ass));
   
@@ -755,9 +757,9 @@ class Assign : public OperatorBase {
 
     using OperatorBase::OperatorBase;
 
-    void perform(Identifier& id, Result& op2, Result& res) override {
-      if (op2.type != id.dataType) {
-        op2.to(id.dataType);
+    void perform(Identifier* id, Result& op2, Result& res) override {
+      if (op2.type != id->dataType) {
+        op2.to(id->dataType);
       }
       // in some cases this could be optimized out, but for now we'll
       // assume it should be an operation
@@ -768,8 +770,24 @@ class Assign : public OperatorBase {
       res.setValue(0);
     }
 
-    void perform(Identifier& id1, Identifier& id2, Result& res) override {
-      if (id2.dataType != id1.dataType) 
+    void perform(Result& op1, Result& op2, Result& res) override {
+
+      Type t = op1.id->dataType;
+
+      if (op2.type != t) {
+        op2.to(op1.id->dataType);
+      }
+      // in some cases this could be optimized out, but for now we'll
+      // assume it should be an operation
+      // id.assignment = op2;
+      func->function.add(Instruction(ctx, getAbstr(), op2, op1.id));
+      
+      // what is this supposed to be set to??
+      res.setValue(0);
+    }
+
+    void perform(Identifier* id1, Identifier* id2, Result& res) override {
+      if (id2->dataType != id1->dataType) 
       {
         Result temp;
         temp.setValue(id2);
@@ -797,11 +815,11 @@ class IncrPost : public OperatorBase {
 
     using OperatorBase::OperatorBase;
 
-    void perform(Identifier& id, Result& res) override {
+    void perform(Identifier* id, Result& res) override {
       
       Result op2;
       op2.setValue(1);
-      op2.to(id.dataType);
+      op2.to(id->dataType);
 
       Result lhs;
       lhs.setValue(id);
@@ -833,11 +851,11 @@ class DecrPost : public OperatorBase {
 
     using OperatorBase::OperatorBase;
 
-    void perform(Identifier& id, Result& res) override {
+    void perform(Identifier* id, Result& res) override {
       
       Result op2;
       op2.setValue(1);
-      op2.to(id.dataType);
+      op2.to(id->dataType);
 
       Result lhs;
       lhs.setValue(id);
@@ -869,11 +887,11 @@ class IncrPre : public OperatorBase {
 
     using OperatorBase::OperatorBase;
 
-    void perform(Identifier& id, Result& res) override {
+    void perform(Identifier* id, Result& res) override {
       
       Result op2;
       op2.setValue(1);
-      op2.to(id.dataType);
+      op2.to(id->dataType);
 
       Result lhs;
       lhs.setValue(id);
@@ -904,11 +922,11 @@ class DecrPre : public OperatorBase {
 
     using OperatorBase::OperatorBase;
 
-    void perform(Identifier& id, Result& res) override {
+    void perform(Identifier* id, Result& res) override {
       
       Result op2;
       op2.setValue(1);
-      op2.to(id.dataType);
+      op2.to(id->dataType);
 
       Result lhs;
       lhs.setValue(id);
@@ -952,17 +970,17 @@ class Call : public OperatorBase {
   public:
     using OperatorBase::OperatorBase;
 
-    void perform(Identifier& f, vector<Result> args, Result& res) override
+    void perform(Identifier* f, vector<Result> args, Result& res) override
     {
-      Identifier& ass = manageTemps(f.dataType);
+      Identifier& ass = manageTemps(f->dataType);
       
       for (int i = args.size() - 1; i > -1; i--) {
-        if (args[i].getType() != f.members[i].dataType) {
-          Identifier& tempass = manageTemps(f.members[i].dataType);
+        if (args[i].getType() != f->members[i].dataType) {
+          Identifier* tempass = &manageTemps(f->members[i].dataType);
           if (args[i].isConst())
           {
             Result res = args[i];
-            res.to(f.members[i].dataType);
+            res.to(f->members[i].dataType);
             func->function.add(Instruction(ctx, Instruction::Abstr::ASSIGN, res, tempass));
           }
           else
@@ -973,7 +991,7 @@ class Call : public OperatorBase {
         }
       }
       
-      func->function.add(Instruction(ctx, getAbstr(), f, args, ass));
+      func->function.add(Instruction(ctx, getAbstr(), f, args, &ass));
   
       res.setValue(ass);
     }
@@ -986,20 +1004,38 @@ class Deref : public OperatorBase {
   public:
     using OperatorBase::OperatorBase;
 
-    void perform(Result& op1, Result& op2, Result& res) override {
+    void perform(Result& op1, Result& res) override {
 
-      // e.g. *(uint16_t*)0x0010
-      if (op1.isConst())
-      {
-        if (op1.type.isPointer())
-        {
-          
-        }
-        else
-        {
-          comp->addNodeError(ctx, "dereferenced value must be a pointer type");
-        }
-      }
+      // // e.g. *(uint16_t*)0x0010
+      // if (op1.isConst())
+      // {
+      //   if (op1.type.isPointer())
+      //   {
+      //     // Identifier& ass = manageTemps(op1.type);
+      //     Identifier& ass = 
+      //     func->function.add(Instruction(ctx, getAbstr(), op1));
+      //     // res.setValue(ass);
+      //     res = op1;
+      //   }
+      //   else
+      //   {
+      //     comp->addNodeError(ctx, "dereferenced value must be a pointer type");
+      //   }
+      // }
+      // else
+      // {
+      //   if (op1.id->dataType.isPointer())
+      //   {
+      //     // Identifier& ass = manageTemps(op1.id->dataType);
+      //     func->function.add(Instruction(ctx, getAbstr(), op1));
+      //     // res.setValue(ass);
+      //     res = op1;
+      //   }
+      //   else
+      //   {
+      //     comp->addNodeError(ctx, "dereferenced value must be a pointer type");
+      //   }
+      // }
     }
 
     Instruction::Abstr getAbstr() override { return Instruction::Abstr::DEREF; }

@@ -93,11 +93,11 @@ void Compiler::operation(antlr4::tree::ParseTree* ctx, Result op1, Result op2, O
     }
   }
   else if (op1.isConst()) {
-    oper.perform(op1, *op2.id, res);
+    oper.perform(op1, op2.id, res);
   } else if (op2.isConst()) {
-    oper.perform(*op1.id, op2, res);
+    oper.perform(op1.id, op2, res);
   } else {
-    oper.perform(*op1.id, *op2.id, res);
+    oper.perform(op1.id, op2.id, res);
   }
 
   results.put(ctx, res);
@@ -159,7 +159,7 @@ void Compiler::operation(antlr4::tree::ParseTree* ctx, Result op1, OperatorBase&
       throw 2;
     }
   } else {
-    oper.perform(*op1.id, res);
+    oper.perform(op1.id, res);
   }
 
   results.put(ctx, res);
@@ -167,8 +167,11 @@ void Compiler::operation(antlr4::tree::ParseTree* ctx, Result op1, OperatorBase&
 
 Any Compiler::visitDereference(CoraxParser::DereferenceContext *ctx)
 {
+  visitChildren(ctx);
+  // Deref oper(ctx, currentScope, currentFunction, this);
 
-  
+  // operation(ctx, results.get(ctx->expr_cast()), oper);
+  results.put(ctx, results.get(ctx->expr_cast()));
 
   return nullptr;
 }
@@ -205,7 +208,7 @@ Any Compiler::visitCall(CoraxParser::CallContext* ctx)
       addNodeError(ctx, "argument count doesn't match function definition");
       res.setValue(0);
     } else {
-      oper.perform(f, args, res);
+      oper.perform(&f, args, res);
       if (graphing) graph.Addc(ctx->expr_primary()->getText());
     }
   } catch (int e) {
@@ -253,7 +256,7 @@ Any Compiler::visitStatLabeled(CoraxParser::StatLabeledContext* ctx)
   id.name = ctx->IDENTIFIER()->getText();
   try {
     currentScope->AddSymbol(id);
-    currentFunction->function.add(Instruction(ctx, Instruction::LABEL, currentScope->GetLast()));
+    currentFunction->function.add(Instruction(ctx, Instruction::LABEL, &currentScope->GetLast()));
   } catch (int e) {
     string errmess = "label name overrides local variable";
     addNodeError(ctx, errmess);
@@ -282,12 +285,12 @@ Any Compiler::visitStatIf(CoraxParser::StatIfContext* ctx)
   Result check = results.get(ctx->expression());
   Result constant;
   constant.setValue(0);
-  Instruction inst(ctx, Instruction::CONDITIONAL, Instruction::GREATER, check, constant, bptr, eptr);
+  Instruction inst(ctx, Instruction::CONDITIONAL, Instruction::GREATER, check, constant, &bptr, &eptr);
   currentFunction->function.add(inst);
 
-  currentFunction->function.add(Instruction(ctx, Instruction::LABEL, bptr));
+  currentFunction->function.add(Instruction(ctx, Instruction::LABEL, &bptr));
   visit(ctx->statement());
-  currentFunction->function.add(Instruction(ctx, Instruction::LABEL, eptr));
+  currentFunction->function.add(Instruction(ctx, Instruction::LABEL, &eptr));
 
   PopIf();
 
@@ -413,15 +416,17 @@ Any Compiler::visitAssignment(CoraxParser::AssignmentContext* ctx)
 {
   visitChildren(ctx);
   Assign oper(ctx, currentScope, currentFunction, this);
-  operation(ctx, results.get(ctx->expr_primary()), results.get(ctx->expr_assi()), oper);
+  Result op1 = results.get(ctx->expr_primary());
+  Result op2 = results.get(ctx->expr_assi());
+  operation(ctx, op1, op2, oper);
 
   return nullptr;
 }
 
-Any Compiler::visitDereference(CoraxParser::DereferenceContext *ctx) 
-{
-  return visitChildren(ctx);
-}
+// Any Compiler::visitDereference(CoraxParser::DereferenceContext *ctx) 
+// {
+//   return visitChildren(ctx);
+// }
 
 Any Compiler::visitNegation(CoraxParser::NegationContext *ctx) 
 {
@@ -453,10 +458,10 @@ Any Compiler::visitAddress(CoraxParser::AddressContext *ctx)
   return visitChildren(ctx);
 }
 
-Any Compiler::visitIndexing(CoraxParser::IndexingContext *ctx) 
-{
-  return visitChildren(ctx);
-}
+// Any Compiler::visitIndexing(CoraxParser::IndexingContext *ctx) 
+// {
+//   return visitChildren(ctx);
+// }
 
 Any Compiler::visitIncrementPost(CoraxParser::IncrementPostContext *ctx) 
 {
