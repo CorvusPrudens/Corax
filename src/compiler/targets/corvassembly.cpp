@@ -263,11 +263,21 @@ void CorvassemblyTarget::TranslateAssign(Instruction& inst)
     } catch (int e) {
       // for now, since a register can only hold one pointer,
       // the loaded value will change to the assignee
-      Result& temp = GenerateResult(inst.assignment, inst.assignment->dataType.isPointer());
-      // this would be ideal, but the register needs a pointer to a result!!
-      op2.load(temp);
+      Result& temp = GenerateResult(inst.assignment);
+      if (inst.assignment->dataType.isPointer())
+      {
+        Register& pointer = GetPointer(inst.assignment, inst);
+        op2.load(temp, false, &pointer);
+        UpdateRegister(pointer);
+      }
+      else
+      {
+        // this would be ideal, but the register needs a pointer to a result!!
+        op2.load(temp);
+      }
       UpdateRegister(op2);
       ManageStorage(op2, inst);
+      
       // StoreRegister(op2, *inst.assignment);
     }
 }
@@ -314,6 +324,26 @@ void CorvassemblyTarget::TranslateCall(Instruction& inst)
 
 void CorvassemblyTarget::TranslateReturnPrep(Instruction& inst)
 {
+  for (auto& reg : registers)
+  {
+    try {
+      if (reg.loaded != nullptr && reg.loaded->kind == Result::Kind::ID)
+      {
+        current_scope->GetLocalSymbol(reg.loaded->id->name);
+        // reg.requires_storage = false;
+        // This ensures that data assigned to pointers is properly
+        // stored even if the pointer itself will be tossed
+        if (reg.loaded->id->dataType.isPointer())
+        {
+          TranslateStore(reg, inst);
+          reg.requires_storage = false;
+        }
+      }
+      
+    } catch (int e) {}
+  }
+  
+
   if (!inst.operand1.isConst() && !(inst.operand1.type == void_))
   {
     Register& ret = PrepareResult(inst.operand1, inst);
@@ -415,9 +445,10 @@ void CorvassemblyTarget::TranslateStore(Register& reg, Instruction& inst, Identi
 
   if (id.dataType.isPointer())
   {
-    Result& tempres = GenerateResult(&id, true);
-    Register& pointer = PrepareResult(tempres, inst);
-    AddLine("str", inst, {LineArg(reg), LineArg(pointer)});
+    // Result& tempres = GenerateResult(&id, true);
+    // Register& pointer = PrepareResult(tempres, inst);
+    Register& pointer = GetPointer(&id, inst, reg.pointer);
+    AddLine("str", inst, {LineArg(reg), LineArg(pointer, true)});
   }
   else
   {
@@ -427,6 +458,8 @@ void CorvassemblyTarget::TranslateStore(Register& reg, Instruction& inst, Identi
   
   
 }
+
+// TODO -- this is not well set up (for anything) but also for multiple levels of pointers
 void CorvassemblyTarget::TranslateLoad(Register& reg, Instruction& inst, Result& res)
 {
   // string line = "ldr " + reg.name + ", " + res.to_string();
@@ -487,6 +520,12 @@ void CorvassemblyTarget::TranslateScopeEnd(Instruction& inst)
       {
         current_scope->GetLocalSymbol(reg.loaded->id->name);
         // reg.requires_storage = false;
+        // This ensures that data assigned to pointers is properly
+        // stored even if the pointer itself will be tossed
+        if (reg.loaded->id->dataType.isPointer())
+        {
+          TranslateStore(reg, inst);
+        }
         reg.flush(); // maybe this should be done?
       }
       

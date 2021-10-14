@@ -304,7 +304,13 @@ string Result::to_string()
   string s = "";
   if (kind == Kind::ID)
     s = id->name;
-  else if (type == long_double_) {
+  else if (kind == Kind::POINTER) {
+    if (isConst())
+      // TODO -- this type shouldn't be hardcoded here
+      s = std::to_string(as<unsigned int>());
+    else
+      s = id->name;
+  } else if (type == long_double_) {
     s = std::to_string(as<long double>());
   } else if (type == double_) {
     s = std::to_string(as<double>());

@@ -47,7 +47,7 @@ struct Register {
   Register(const Register& other);
 
   bool isFree() { return status == Status::FREE; }
-  void load(Result& id);
+  void load(Result& id, bool is_pointer = false, Register* pointer = nullptr);
   void flush();
 
   string name;
@@ -58,6 +58,7 @@ struct Register {
   bool requires_storage;
 
   Result* loaded;
+  Register* pointer;
   unsigned int latest;
   unsigned int operationStep;
   bool is_pointer;
@@ -66,10 +67,9 @@ struct Register {
 struct LineArg {
   enum TYPE { REGISTER = 0, RESULT, STRING };
   
-  LineArg() {}
-  LineArg(Register& r);
-  LineArg(Result& r);
-  LineArg(string s);
+  LineArg(Register& r, bool ptr = false);
+  LineArg(Result& r, bool ptr = false);
+  LineArg(string s, bool ptr = false);
   // LineArg(LineArg& other);
   ~LineArg() {}
 
@@ -78,6 +78,7 @@ struct LineArg {
 
   Register* reg;
   Result* result;
+  bool pointer_op;
   string str;
   TYPE t;
 };
@@ -220,6 +221,8 @@ class BaseTarget {
     virtual Register::Data FetchDataType(Result& res);
     virtual Register::Data FetchDataType(Identifier& id);
 
+    virtual Register& GetPointer(Identifier* target, Instruction& inst, Register* pointer = nullptr);
+
     /** Returns the first register with the rank of STACK_POINTER
      */
     virtual Register& GetStackPointer();
@@ -253,6 +256,8 @@ class BaseTarget {
     virtual void AddLine(string mnemonic, Instruction& inst, vector<LineArg> args);
     virtual void AddLine(string mnemonic, Instruction& inst, vector<LineArg> args, string condition);
     virtual string to_string();
+
+    virtual Register::Data GetPointerType() = 0;
 
     Compiler* comp;
     string targetName;

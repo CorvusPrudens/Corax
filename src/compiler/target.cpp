@@ -127,6 +127,7 @@ Register::Register(string n, Data d, Register::Rank r, unsigned int b)
   latest = 0;
   operationStep = 0;
   is_pointer = false;
+  pointer = nullptr;
 }
 
 Register::Register(const Register& other)
@@ -141,19 +142,18 @@ Register::Register(const Register& other)
   latest = other.latest;
   operationStep = other.operationStep;
   is_pointer = other.is_pointer;
+  pointer = other.pointer;
 }
 
-void Register::load(Result& id)
+void Register::load(Result& id, bool isptr, Register* ptr)
 {
   loaded = &id;
   if (!id.isConst())
   {
     latest = id.id->latest;
     status = Status::USED;
-    if (id.id->dataType.isPointer())
-      is_pointer = true;
-    else
-      is_pointer = false;
+    is_pointer = isptr;
+    pointer = ptr;
   }
   else
   {
@@ -169,21 +169,26 @@ void Register::flush()
   requires_storage = false;
   operationStep = 0;
   is_pointer = false;
+  pointer = nullptr;
 }
 
-LineArg::LineArg(Register& r)
+// TODO -- this is annoyingly hardcoded again
+LineArg::LineArg(Register& r, bool ptr)
 {
   t = TYPE::REGISTER;
+  pointer_op = ptr;
   reg = &r;
 }
-LineArg::LineArg(Result& r)
+LineArg::LineArg(Result& r, bool ptr)
 {
   t = TYPE::RESULT;
+  pointer_op = ptr;
   result = &r;
 }
-LineArg::LineArg(string s)
+LineArg::LineArg(string s, bool ptr)
 {
   t = TYPE::STRING;
+  pointer_op = ptr;
   str = s;
 }
 // LineArg::LineArg(LineArg& other)
@@ -195,23 +200,26 @@ LineArg::LineArg(string s)
 // }
 string LineArg::to_string()
 {
+  string out = "";
   switch (t)
   {
     case TYPE::REGISTER:
-    {
-      if (reg->is_pointer)
-        return "[" + reg->name + "]";
-      else
-        return reg->name;
-    }
-      return reg->name;
+      out = reg->name;
+      break;
     case TYPE::RESULT:
-      return result->to_string();
+      out = result->to_string();
+      break;
     case TYPE::STRING:
-      return str;
+      out = str;
+      break;
     default:
       throw 1;
+      break;
   }
+  if (pointer_op)
+    return '[' + out + ']';
+  else
+    return out;
 }
 
 Line::Line(string mnem, vector<LineArg> a)
@@ -248,12 +256,15 @@ string Line::to_string(unordered_map<Identifier*, int> stack_offsets, string bas
   {
     if (
       args[i].GetType() == LineArg::RESULT &&
-      args[i].result->kind == Result::ID &&
+      (args[i].result->kind == Result::ID || args[i].result->kind == Result::POINTER) &&
       stack_offsets.count(args[i].result->id) > 0
     )
     {
       // out += '[' + base_reg + ',' + std::to_string(stack_offsets[args[i].result->id]) + ']' + " (" + args[i].result->id->name + ")";
-      out += '[' + base_reg + ',' + std::to_string(stack_offsets[args[i].result->id]) + ']';
+      if (args[i].result->isConst())
+        out += '[' + args[i].to_string() + ']';
+      else
+        out += '[' + base_reg + ',' + std::to_string(stack_offsets[args[i].result->id]) + ']';
     }
     else
     {
@@ -390,28 +401,40 @@ void BaseTarget::StoreAll(Identifier& function, Instruction& inst, bool include)
   {
     if ((reg.rank == Register::Rank::GENERAL || include) && reg.requires_storage)
     {
-      try{
-        function.funcTable->GetLocalSymbol(reg.loaded->id->name);
-        // if (reg.loaded->id->dataType.qualifiers & Qualifier::VOLATILE) {
-        //   // if it's volatile, store it anyway
-        //   StoreRegister(reg, inst);
-        // }
+      // we should always store pointers
+      if (!reg.is_pointer && reg.loaded != nullptr && reg.loaded->id->dataType.isPointer())
+      {
         StoreRegister(reg, inst);
-      } catch (int e) {
-        // bit of a hacky way to determine if it's a global, but it works...
-        try {
-          function.funcTable->GetSymbol(reg.loaded->id->name);
+      }
+      else
+      {
+        try{
+          function.funcTable->GetLocalSymbol(reg.loaded->id->name);
+          // if (reg.loaded->id->dataType.qualifiers & Qualifier::VOLATILE) {
+          //   // if it's volatile, store it anyway
+          //   StoreRegister(reg, inst);
+          // }
           StoreRegister(reg, inst);
         } catch (int e) {
+          // bit of a hacky way to determine if it's a global, but it works...
+          try {
+            function.funcTable->GetSymbol(reg.loaded->id->name);
+            StoreRegister(reg, inst);
+          } catch (int e) {
 
+          }
         }
       }
+
+      
     }
   }
 }
 
 Register::Data BaseTarget::FetchDataType(Result& res)
 {
+  if (res.type.isPointer())
+    return GetPointerType();
   for (auto st : StandardTypes)
   {
     if (!res.isConst() && res.id->dataType == *st)
@@ -424,6 +447,8 @@ Register::Data BaseTarget::FetchDataType(Result& res)
 
 Register::Data BaseTarget::FetchDataType(Identifier& id)
 {
+  if (id.dataType.isPointer())
+    return GetPointerType();
   for (auto st : StandardTypes)
   {
     if (id.dataType == *st)
@@ -473,7 +498,7 @@ Register& BaseTarget::PrepareResult(Result& res, Instruction& inst)
       if (res.isConst() || reg.latest >= res.id->latest)
       {
         reg.status = Register::Status::USED;
-        reg.operationStep = operationStep++;
+        reg.operationStep = ++operationStep;
         return reg;
       }
     }
@@ -484,7 +509,7 @@ Register& BaseTarget::PrepareResult(Result& res, Instruction& inst)
 
   reg = &GetLastUsed(inst, d);
 
-  reg->operationStep = operationStep++;
+  reg->operationStep = ++operationStep;
   reg->load(res);
   reg->status = Register::Status::USED;
   TranslateLoad(*reg, inst, res);
@@ -656,4 +681,39 @@ void BaseTarget::AddLine(string mnemonic, Instruction& inst, vector<LineArg> arg
     }
   }
   translations.back().AddLine(l, inst, regs);
+}
+
+Register& BaseTarget::GetPointer(Identifier* target, Instruction& inst, Register* pointer)
+{
+
+  // start with given pointer
+  if (pointer != nullptr)
+  {
+    if (pointer->is_pointer && pointer->loaded != nullptr && pointer->loaded->id != nullptr && pointer->loaded->id == target)
+    {
+      return *pointer;
+    }
+  }
+
+  // Check if pointer is already loaded
+  for (auto& reg : registers)
+  {
+    if (reg.is_pointer && reg.loaded != nullptr && reg.loaded->id != nullptr && reg.loaded->id == target)
+    {
+      return reg;
+    }
+  }
+
+  Register* reg;
+  Register::Data d = FetchDataType(*target);
+
+  reg = &GetLastUsed(inst, d);
+
+  Result& res = GenerateResult(target, true);
+
+  reg->operationStep = ++operationStep;
+  reg->load(res, true);
+  reg->status = Register::Status::USED;
+  TranslateLoad(*reg, inst, res);
+  return *reg;
 }

@@ -57,6 +57,8 @@ class CorvassemblyTarget : public BaseTarget {
 
     void SaveUsedRegisters(Identifier& function) override;
     void RestoreUsedRegisters(Identifier& function) override;
+
+    Register::Data GetPointerType() override { return Register::Data::INTEGER; }
 };
 
 #endif
